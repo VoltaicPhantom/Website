@@ -69,8 +69,9 @@ a:hover { color: #0056b3; }
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-top: 20px;
-    padding-bottom: 20px;
+    /* REDUCED PADDING to shrink vertical space around logo/nav */
+    padding-top: 10px; 
+    padding-bottom: 10px;
 }
 
 .logo img {
@@ -312,4 +313,28 @@ footer {
         background: none;
         box-shadow: none;
         padding: 0;
-        border-top: 1px solid rgba(255
+        border-top: 1px solid rgba(255, 255, 255, 0.1); 
+    }
+    
+    .main-nav a {
+        padding: 5px 0;
+        margin: 0;
+        color: var(--white); 
+    }
+
+    .site-branding {
+        text-align: left;
+    }
+
+    .welcome-links {
+        flex-direction: column;
+        gap: 15px;
+    }
+    .secondary-button {
+        margin-left: 0;
+    }
+    
+    .site-branding .button {
+        max-width: 100%; 
+    }
+}
