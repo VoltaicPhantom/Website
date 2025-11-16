@@ -26,7 +26,8 @@ body {
     width: 90%;
     max-width: 1200px;
     margin: 0 auto;
-    padding: var(--spacing) 0;
+    /* REDUCED VERTICAL WHITESPACE */
+    padding: 15px 0; 
 }
 
 /* --- 2. Typography --- */
@@ -53,7 +54,8 @@ a:hover { color: #0056b3; }
     background: var(--dark-bg);
     color: var(--white);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    padding-bottom: 60px; 
+    /* REDUCED WHITESPACE BELOW HEADER */
+    padding-bottom: 40px; 
 }
 
 /* --- Header Top & Nav Links --- */
@@ -67,7 +69,8 @@ a:hover { color: #0056b3; }
 
 .logo img {
     height: auto;
-    max-height: 69px; /* Increased from 60px by 15% */
+    /* LOGO SIZE INCREASED BY 15% */
+    max-height: 69px; 
     width: auto;
     display: block;
 }
@@ -99,7 +102,8 @@ a:hover { color: #0056b3; }
 /* --- Hero & Branding Content (HOME PAGE HEADER CONTENT) --- */
 .site-branding {
     color: var(--white); 
-    padding: 40px 0;
+    /* REDUCED WHITESPACE */
+    padding: 30px 0;
     text-align: left; /* Left Aligned titles */
 }
 
@@ -117,7 +121,6 @@ a:hover { color: #0056b3; }
 
 /* --- FIX for Button Alignment & Size on Home Page --- */
 .site-branding .button {
-    /* Ensures the button is on its own line, left-aligned, and sized correctly */
     display: block; 
     max-width: 250px; 
     text-align: center; 
@@ -126,7 +129,8 @@ a:hover { color: #0056b3; }
 
 /* --- Hero Sections (SUB-PAGE HEADERS) --- */
 .hero-section {
-    padding: 40px 0;
+    /* REDUCED WHITESPACE */
+    padding: 30px 0;
     text-align: left;
 }
 
@@ -146,12 +150,14 @@ a:hover { color: #0056b3; }
 }
 
 .hero-section.small-hero {
-    padding: 20px 0 40px 0;
+    /* REDUCED WHITESPACE */
+    padding: 15px 0 30px 0;
 }
 
 /* --- 4. Content Sections (Standard) --- */
 section {
-    padding: 40px 0;
+    /* REDUCED WHITESPACE */
+    padding: 30px 0;
     border-bottom: 1px solid #e9ecef;
 }
 section:last-of-type { border-bottom: none; }
