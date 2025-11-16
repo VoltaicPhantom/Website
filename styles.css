@@ -75,8 +75,8 @@ a:hover { color: #0056b3; }
 
 .logo img {
     height: auto;
-    /* LOGO SIZE MAXIMIZED (150px) for visibility of embedded text */
-    max-height: 150px; 
+    /* LOGO SIZE MAXIMIZED (180px) for visibility of embedded text */
+    max-height: 180px; 
     width: auto;
     display: block;
 }
@@ -312,28 +312,4 @@ footer {
         background: none;
         box-shadow: none;
         padding: 0;
-        border-top: 1px solid rgba(255, 255, 255, 0.1); 
-    }
-    
-    .main-nav a {
-        padding: 5px 0;
-        margin: 0;
-        color: var(--white); 
-    }
-
-    .site-branding {
-        text-align: left;
-    }
-
-    .welcome-links {
-        flex-direction: column;
-        gap: 15px;
-    }
-    .secondary-button {
-        margin-left: 0;
-    }
-    
-    .site-branding .button {
-        max-width: 100%; 
-    }
-}
+        border-top: 1px solid rgba(255
