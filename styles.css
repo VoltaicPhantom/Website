@@ -53,7 +53,7 @@ a:hover { color: #0056b3; }
     background: var(--dark-bg);
     color: var(--white);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    padding-bottom: 60px; 
+    padding-bottom: 30px; 
 }
 
 /* --- Header Top & Nav Links --- */
@@ -67,7 +67,7 @@ a:hover { color: #0056b3; }
 
 .logo img {
     height: auto;
-    max-height: 60px; 
+    max-height: 120px; 
     width: auto;
     display: block;
 }
@@ -243,3 +243,4 @@ section:last-of-type { border-bottom: none; }
 .form-group label {
     display: block; 
     margin-bottom
+
