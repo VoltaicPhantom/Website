@@ -48,8 +48,6 @@ a {
 a:hover { color: #0056b3; }
 
 /* --- 3. Header Structure & Logo Positioning --- */
-
-/* Base Header Styling: Default white background for non-home pages */
 .main-header {
     background: var(--white); 
     color: var(--text-color);
@@ -57,14 +55,12 @@ a:hover { color: #0056b3; }
     padding-bottom: 0; 
 }
 
-/* Home Page Header Styling (Dark background) */
 .main-header.dark-header {
     background: var(--dark-bg);
     color: var(--white);
     padding-bottom: 60px; 
 }
 
-/* Header Top: Aligns Logo (left) and Navigation (right) */
 .header-top {
     display: flex;
     justify-content: space-between;
@@ -73,7 +69,6 @@ a:hover { color: #0056b3; }
     padding-bottom: 20px;
 }
 
-/* Logo Sizing (60px max height) */
 .logo img {
     height: auto;
     max-height: 60px; 
@@ -81,10 +76,9 @@ a:hover { color: #0056b3; }
     display: block;
 }
 
-/* --- Navigation (Aligned to the right in header-top) --- */
+/* --- Navigation (Boxed Style) --- */
 .main-nav {
     display: flex;
-    /* Boxed Style */
     background: var(--light-bg); 
     border: 1px solid #ced4da; 
     border-radius: 8px; 
@@ -93,7 +87,6 @@ a:hover { color: #0056b3; }
     gap: 15px; 
 }
 
-/* Default link color for white background pages (Service, About, Contact) */
 .main-nav a {
     color: var(--primary-color); 
     padding: 0; 
@@ -103,7 +96,6 @@ a:hover { color: #0056b3; }
     border-bottom: 2px solid transparent;
 }
 
-/* Link color and style for the dark Home page header */
 .dark-header .main-nav {
     background: transparent; 
     border: 1px solid rgba(255, 255, 255, 0.3); 
@@ -233,10 +225,10 @@ section:last-of-type { border-bottom: none; }
     margin-top: 30px;
 }
 
-/* --- 7. Contact Form Styles (FIXED ALIGNMENT) --- */
+/* --- 7. Contact Form Styles --- */
 .contact-form {
     max-width: 600px;
-    margin: 30px auto; /* Re-established auto margin for horizontal centering */
+    margin: 30px auto; 
     padding: 20px;
     background: var(--light-bg);
     border-radius: 8px;
@@ -274,13 +266,12 @@ section:last-of-type { border-bottom: none; }
     margin-top: 10px;
 }
 
-/* --- 8. Footer (FIXED SPACING) --- */
+/* --- 8. Footer --- */
 footer {
     background: var(--secondary-color);
     color: #aaa;
     text-align: center;
     padding: 20px 0;
-    /* Removed margin-top from here, relying on spacing from sections and main content */
     font-size: 0.9em;
 }
 
