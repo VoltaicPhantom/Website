@@ -47,13 +47,14 @@ a {
 }
 a:hover { color: #0056b3; }
 
-/* --- 3. Header Structure & Logo Positioning FIXES --- */
+/* --- 3. Header Structure & Logo Positioning --- */
 
-/* Base Header Styling: Applies to all pages */
+/* Base Header Styling: Default white background for non-home pages */
 .main-header {
-    background: var(--white); /* Default to white for most pages */
+    background: var(--white); 
     color: var(--text-color);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Optional: subtle shadow */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    padding-bottom: 0; 
 }
 
 /* Home Page Header Styling (Dark background) */
@@ -63,7 +64,7 @@ a:hover { color: #0056b3; }
     padding-bottom: 60px; /* Space below the hero content */
 }
 
-/* Header Top: Aligns Logo/Branding (left) and Navigation (right) */
+/* Header Top: Aligns Logo (left) and Navigation (right) */
 .header-top {
     display: flex;
     justify-content: space-between;
@@ -72,17 +73,10 @@ a:hover { color: #0056b3; }
     padding-bottom: 20px;
 }
 
-/* Header Left: Groups Logo and the Branding/Title area for horizontal alignment */
-.header-left {
-    display: flex;
-    align-items: center; 
-    gap: 15px; 
-}
-
 /* Logo Sizing (60px max height) */
 .logo img {
     height: auto;
-    max-height: 60px; /* Final desired logo size */
+    max-height: 60px; 
     width: auto;
     display: block;
 }
@@ -114,33 +108,31 @@ a:hover { color: #0056b3; }
 }
 
 /* --- Hero & Branding Content --- */
-.hero-section {
-    padding: 40px 0;
-    text-align: left;
-}
 
-/* Styling for the Home Page branding content */
+/* Home Page Branding (Below the top bar) */
 .main-header.dark-header .site-branding {
-    /* Ensures the branding text is visible on the dark background */
     color: var(--white); 
     padding: 40px 0;
 }
 
-/* Styling for the Home Page Title */
 .main-header.dark-header .site-branding h1 {
     font-size: 3em;
     color: var(--white);
     margin-bottom: 0;
 }
 
-/* Styling for the Home Page Subtitle */
 .main-header.dark-header .site-branding p {
     font-size: 1.25em;
     color: #ccc;
     margin-bottom: 20px;
 }
 
-/* Styling for other pages (Service, About, Contact) */
+/* Content Sections on all pages */
+.hero-section {
+    padding: 40px 0;
+    text-align: left;
+}
+
 .hero-section h1 {
     font-size: 2.5em;
     margin-top: 0;
@@ -148,7 +140,6 @@ a:hover { color: #0056b3; }
 .hero-section.small-hero {
     padding: 20px 0 40px 0;
 }
-
 
 /* --- 4. Content Sections (Standard) --- */
 section {
@@ -228,7 +219,45 @@ section:last-of-type { border-bottom: none; }
     margin-top: 30px;
 }
 
-/* --- 7. Footer --- */
+/* --- 7. Contact Form Styles (FIXED FORMATTING) --- */
+.contact-form {
+    max-width: 600px;
+    margin: 30px auto 0;
+    padding: 20px;
+    background: var(--light-bg);
+    border-radius: 8px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block; /* Forces label above input field */
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.contact-form input[type="text"],
+.contact-form input[type="email"],
+.contact-form textarea {
+    width: 100%; /* Ensures fields take up full width */
+    padding: 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 1em;
+}
+
+.contact-form textarea {
+    resize: vertical;
+}
+
+.contact-info {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+/* --- 8. Footer --- */
 footer {
     background: var(--secondary-color);
     color: #aaa;
@@ -246,20 +275,11 @@ footer {
     color: var(--primary-color);
 }
 
-/* --- 8. Media Queries (Responsiveness) --- */
+/* --- 9. Media Queries (Responsiveness) --- */
 @media (max-width: 768px) {
     .header-top {
         flex-direction: column;
         align-items: flex-start;
-    }
-    .header-left {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0;
-        margin-bottom: 15px;
-    }
-    .branding-area {
-        padding-top: 10px;
     }
 
     .main-nav {
@@ -271,6 +291,10 @@ footer {
         padding-top: 10px;
     }
 
+    .dark-header .main-nav {
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
     .main-nav a {
         padding: 5px 0;
         margin: 0;
