@@ -3,7 +3,7 @@
     --primary-color: #007bff; /* Blue for links/buttons */
     --secondary-color: #343a40; /* Dark text/Navigation background */
     --light-bg: #f8f9fa;
-    --dark-bg: #212529; /* Hero background */
+    --dark-bg: #212529; /* Main Header background */
     --text-color: #333;
     --white: #fff;
     --spacing: 20px;
@@ -54,77 +54,72 @@ a:hover {
     color: #0056b3;
 }
 
-/* --- 3. Header & Hero Section --- */
-.hero {
-    /* Merged declarations: Uses dark background */
+/* --- 3. Header Structure & Logo Positioning --- */
+
+/* Main Header container (includes logo, nav, and hero content) */
+.main-header {
     background: var(--dark-bg);
     color: var(--white);
-    text-align: center;
-    /* This padding is the minimum needed when logo is present */
-    padding: 0 0 60px 0; 
+    padding-bottom: 60px; /* Default padding for the hero content */
 }
 
-/* Style for About/Contact page header (small-hero) */
-.small-hero {
-    padding: 40px 0;
-    text-align: center;
-}
-.small-hero h1 {
-    font-size: 2em;
+/* Top bar with logo (left) and navigation (right) */
+.header-top {
+    display: flex;
+    justify-content: space-between; /* Pushes logo left, nav right */
+    align-items: center;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.hero h1 {
+/* Logo Sizing (40% smaller than previous 80px max-height) */
+.logo img {
+    height: auto;
+    max-height: 48px; 
+    width: auto;
+}
+
+/* Hero Content Area (Below the header-top bar) */
+.hero-section {
+    text-align: center;
+    padding-top: 30px; 
+}
+
+.hero-section h1 {
     color: var(--white);
     font-size: 3em;
 }
 
-.hero p {
+.hero-section p {
     font-size: 1.25em;
     margin-bottom: 30px;
     color: #ccc;
 }
 
-/* Logo Integration & Header Top */
-.header-top {
+/* Small Hero for About/Contact/Services pages */
+.hero-section.small-hero {
+    padding: 40px 0;
+}
+
+.hero-section.small-hero h1 {
+    font-size: 2em;
+}
+
+/* --- 4. Navigation (Integrated into header-top) --- */
+.main-nav {
     display: flex;
-    justify-content: center;
-    align-items: center;
-    padding-top: 20px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Subtle border */
+    gap: 20px;
 }
 
-.logo img {
-    height: auto;
-    max-height: 80px;
-    width: auto;
-}
-
-/* Adjust the hero content area to fit below the header-top div */
-.hero-content {
-    padding-top: 30px;
-}
-.small-hero .hero-content {
-    padding-top: 10px;
-}
-
-/* --- 4. Navigation --- */
-nav {
-    background: var(--secondary-color);
-    text-align: center;
-    padding: 15px 0;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-nav a {
+.main-nav a {
     color: var(--white);
-    padding: 10px 20px;
-    margin: 0 10px;
+    padding: 5px 10px;
     font-weight: 500;
     border-bottom: 2px solid transparent;
 }
 
-nav a:hover {
+.main-nav a:hover {
     color: var(--primary-color);
     border-bottom: 2px solid var(--primary-color);
 }
@@ -159,55 +154,4 @@ section:last-of-type {
     padding: var(--spacing);
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-    transition: transform 0.3s;
-}
-
-.card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
-}
-
-.card ul {
-    list-style: disc;
-    margin-left: 20px;
-    padding-top: 10px;
-    color: #555;
-}
-
-/* --- 7. Buttons & Links --- */
-.button {
-    display: inline-block;
-    background-color: var(--primary-color);
-    color: var(--white) !important;
-    padding: 12px 25px;
-    border-radius: 5px;
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    border: none;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-.button:hover {
-    background-color: #0056b3;
-    text-decoration: none;
-}
-
-/* New: Style for secondary button (used on Home Page) */
-.secondary-button {
-    background-color: var(--secondary-color);
-    margin-left: var(--spacing); /* Separate from primary button */
-}
-
-.secondary-button:hover {
-    background-color: #1a1e21; /* Slightly darker secondary color */
-}
-
-/* --- 8. Contact Form Styles --- */
-.contact-form {
-    max-width: 600px;
-    margin: 30px auto 0;
-    padding: 20px;
-    background: var(--light-bg);
-    border-radius: 8px;
+    transition: transform 0.3
