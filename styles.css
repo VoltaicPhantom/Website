@@ -1,9 +1,9 @@
 /* --- 1. Global Reset & Base Styles --- */
 :root {
-    --primary-color: #007bff; /* Blue for links/buttons */
-    --secondary-color: #343a40; /* Dark text/Navigation background */
+    --primary-color: #007bff;
+    --secondary-color: #343a40;
     --light-bg: #f8f9fa;
-    --dark-bg: #212529; /* Main Header background */
+    --dark-bg: #212529;
     --text-color: #333;
     --white: #fff;
     --spacing: 20px;
@@ -54,84 +54,90 @@ a:hover {
     color: #0056b3;
 }
 
-/* --- 3. Header Structure & Logo Positioning --- */
+/* --- 3. Header Structure & Logo Positioning (FIXED) --- */
 
-/* Main Header container (includes logo, nav, and hero content) */
 .main-header {
-    background: var(--dark-bg);
-    color: var(--white);
-    padding-bottom: 60px; /* Default padding for the hero content */
+    background: var(--white); 
+    color: var(--text-color);
+    /* Remove padding-bottom here, let content sections handle spacing */
+    padding-bottom: 0; 
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Optional: add a light shadow to the header */
 }
 
-/* Top bar with logo (left) and navigation (right) */
+/* Header Top: Distributes logo/branding to the left and navigation to the right */
 .header-top {
     display: flex;
-    justify-content: space-between; /* Pushes logo left, nav right */
-    align-items: center;
+    justify-content: space-between; /* Pushes left and right sides apart */
+    align-items: center; 
     padding-top: 20px;
     padding-bottom: 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Logo Sizing (40% smaller than previous 80px max-height) */
+/* Header Left: Groups the Logo and the Branding/Title area */
+.header-left {
+    display: flex;
+    align-items: center; /* Vertically centers logo and branding area */
+    gap: 15px; /* Space between logo and text area */
+}
+
+/* Logo Sizing: Increased to 60px */
 .logo img {
     height: auto;
-    max-height: 48px; 
+    max-height: 60px; 
     width: auto;
+    display: block;
 }
 
-/* Hero Content Area (Below the header-top bar) */
-.hero-section {
-    text-align: center;
-    padding-top: 30px; 
+/* Site Branding: Title/Subtitle/Button Area */
+.branding-area {
+    text-align: left;
+}
+.branding-area h1 {
+    font-size: 1.8em; /* Adjusted size for better alignment with logo */
+    margin: 0; 
+}
+.branding-area p {
+    font-size: 0.9em;
+    margin: 5px 0 10px 0; 
+    color: #6c757d;
+}
+.branding-area .button {
+    padding: 8px 15px; /* Smaller button to fit better next to the logo */
 }
 
-.hero-section h1 {
-    color: var(--white);
-    font-size: 3em;
-}
-
-.hero-section p {
-    font-size: 1.25em;
-    margin-bottom: 30px;
-    color: #ccc;
-}
-
-/* Small Hero for About/Contact/Services pages */
-.hero-section.small-hero {
-    padding: 40px 0;
-}
-
-.hero-section.small-hero h1 {
-    font-size: 2em;
-}
 
 /* --- 4. Navigation (Integrated into header-top) --- */
 .main-nav {
     display: flex;
-    gap: 20px;
+    gap: 15px;
+    /* Use the primary color for navigation links, matching the screenshot's button color */
 }
 
 .main-nav a {
-    color: var(--white);
+    color: var(--primary-color); 
     padding: 5px 10px;
     font-weight: 500;
+    text-transform: uppercase;
+    font-size: 0.9em;
     border-bottom: 2px solid transparent;
 }
 
 .main-nav a:hover {
-    color: var(--primary-color);
-    border-bottom: 2px solid var(--primary-color);
+    color: #0056b3;
+    border-bottom: 2px solid #0056b3;
 }
 
-/* --- 5. Sections --- */
-section {
+
+/* --- 5. Hero & Sections --- */
+.hero-section {
     padding: 40px 0;
-    border-bottom: 1px solid #e9ecef;
+    /* The screenshot shows the welcome text left-aligned with the main content */
+    text-align: left; 
 }
 
-section:last-of-type {
-    border-bottom: none;
+.hero-section h2 {
+    font-size: 2em;
+    margin-top: 0.5em;
 }
 
 .section-description {
@@ -141,7 +147,7 @@ section:last-of-type {
     text-align: center;
 }
 
-/* --- 6. Services Grid & Cards --- */
+/* --- 6. Services Grid & Cards (Standard) --- */
 .grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -191,6 +197,7 @@ section:last-of-type {
 
 .secondary-button {
     background-color: var(--secondary-color);
+    color: var(--white) !important;
     margin-left: var(--spacing);
 }
 
@@ -200,12 +207,12 @@ section:last-of-type {
 
 .welcome-links {
     display: flex;
-    justify-content: center;
+    justify-content: flex-start; /* Aligns buttons to the left */
     gap: var(--spacing);
     margin-top: 30px;
 }
 
-/* --- 8. Contact Form Styles --- */
+/* --- 8. Contact Form Styles (Standard) --- */
 .contact-form {
     max-width: 600px;
     margin: 30px auto 0;
@@ -263,20 +270,24 @@ footer {
 
 /* --- 10. Media Queries (Responsiveness) --- */
 @media (max-width: 768px) {
-    .main-header {
-        padding-bottom: 30px;
-    }
-
     .header-top {
         flex-direction: column;
-        padding-top: 15px;
-        padding-bottom: 15px;
+        align-items: flex-start;
+        padding-bottom: 0;
+    }
+    
+    .header-left {
+        width: 100%;
+        margin-bottom: 15px;
     }
 
     .main-nav {
-        margin-top: 15px;
         flex-direction: column;
-        gap: 10px;
+        align-items: flex-start;
+        width: 100%;
+        gap: 0;
+        border-top: 1px solid #eee;
+        padding-top: 10px;
     }
 
     .main-nav a {
@@ -284,19 +295,14 @@ footer {
         margin: 0;
     }
 
-    .hero-section h1 {
-        font-size: 2em;
-    }
-
-    .hero-section.small-hero {
-        padding: 30px 0;
+    .hero-section {
+        padding-top: 20px;
     }
     
     .welcome-links {
         flex-direction: column;
         gap: 15px;
     }
-
     .secondary-button {
         margin-left: 0;
     }
