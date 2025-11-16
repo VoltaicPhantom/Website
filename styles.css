@@ -75,8 +75,8 @@ a:hover { color: #0056b3; }
 
 .logo img {
     height: auto;
-    /* LOGO SIZE INCREASED BY 15% */
-    max-height: 90px; 
+    /* LOGO SIZE MAXIMIZED (150px) for visibility of embedded text */
+    max-height: 150px; 
     width: auto;
     display: block;
 }
@@ -337,4 +337,3 @@ footer {
         max-width: 100%; 
     }
 }
-
