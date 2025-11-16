@@ -61,7 +61,7 @@ a:hover { color: #0056b3; }
 .main-header.dark-header {
     background: var(--dark-bg);
     color: var(--white);
-    padding-bottom: 60px; /* Space below the hero content */
+    padding-bottom: 60px; 
 }
 
 /* Header Top: Aligns Logo (left) and Navigation (right) */
@@ -84,29 +84,29 @@ a:hover { color: #0056b3; }
 /* --- Navigation (Aligned to the right in header-top) --- */
 .main-nav {
     display: flex;
-    /* Updated border to be like a card/form box */
-    background: var(--light-bg); /* Match light background of cards/forms */
-    border: 1px solid #ced4da; /* Match border of form inputs */
-    border-radius: 8px; /* Match border-radius of cards/forms */
-    padding: 10px 15px; /* Adjust padding to make it look like a box */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Subtle shadow for depth */
-    gap: 15px; /* Space between the links */
+    /* Boxed Style */
+    background: var(--light-bg); 
+    border: 1px solid #ced4da; 
+    border-radius: 8px; 
+    padding: 10px 15px; 
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); 
+    gap: 15px; 
 }
 
 /* Default link color for white background pages (Service, About, Contact) */
 .main-nav a {
     color: var(--primary-color); 
-    padding: 0; /* No internal padding needed on links, padding is on the .main-nav container */
+    padding: 0; 
     font-weight: 500;
     text-transform: uppercase;
     font-size: 0.9em;
     border-bottom: 2px solid transparent;
 }
 
-/* Link color for the dark Home page header */
+/* Link color and style for the dark Home page header */
 .dark-header .main-nav {
-    background: transparent; /* Remove background on dark header */
-    border: 1px solid rgba(255, 255, 255, 0.3); /* Lighter border on dark background */
+    background: transparent; 
+    border: 1px solid rgba(255, 255, 255, 0.3); 
     box-shadow: none;
 }
 
@@ -124,8 +124,6 @@ a:hover { color: #0056b3; }
 }
 
 /* --- Hero & Branding Content --- */
-
-/* Home Page Branding (Below the top bar) */
 .main-header.dark-header .site-branding {
     color: var(--white); 
     padding: 40px 0;
@@ -144,7 +142,6 @@ a:hover { color: #0056b3; }
     margin-bottom: 20px;
 }
 
-/* Content Sections on all pages */
 .hero-section {
     padding: 40px 0;
     text-align: left;
@@ -236,14 +233,14 @@ section:last-of-type { border-bottom: none; }
     margin-top: 30px;
 }
 
-/* --- 7. Contact Form Styles --- */
+/* --- 7. Contact Form Styles (FIXED ALIGNMENT) --- */
 .contact-form {
     max-width: 600px;
-    margin: 30px auto 0;
+    margin: 30px auto; /* Re-established auto margin for horizontal centering */
     padding: 20px;
     background: var(--light-bg);
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); /* Added for consistency with cards */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); 
 }
 
 .form-group {
@@ -277,13 +274,13 @@ section:last-of-type { border-bottom: none; }
     margin-top: 10px;
 }
 
-/* --- 8. Footer --- */
+/* --- 8. Footer (FIXED SPACING) --- */
 footer {
     background: var(--secondary-color);
     color: #aaa;
     text-align: center;
     padding: 20px 0;
-    margin-top: 20px;
+    /* Removed margin-top from here, relying on spacing from sections and main content */
     font-size: 0.9em;
 }
 
@@ -295,4 +292,46 @@ footer {
     color: var(--primary-color);
 }
 
-/* --- 9
+/* --- 9. Media Queries (Responsiveness) --- */
+@media (max-width: 768px) {
+    .header-top {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .main-nav {
+        flex-direction: column;
+        align-items: flex-start;
+        width: 100%;
+        gap: 0;
+        border-top: 1px solid #eee;
+        padding-top: 10px;
+        
+        /* Reset boxed style on mobile */
+        border: none; 
+        background: none;
+        box-shadow: none;
+        padding: 0;
+    }
+
+    .dark-header .main-nav {
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        background: none;
+    }
+    
+    .main-nav a {
+        padding: 5px 0;
+        margin: 0;
+    }
+    .dark-header .main-nav a {
+        color: var(--white); 
+    }
+
+    .welcome-links {
+        flex-direction: column;
+        gap: 15px;
+    }
+    .secondary-button {
+        margin-left: 0;
+    }
+}
