@@ -61,7 +61,7 @@ a:hover { color: #0056b3; }
 .main-header.dark-header {
     background: var(--dark-bg);
     color: var(--white);
-    padding-bottom: 60px;
+    padding-bottom: 60px; /* Space below the hero content */
 }
 
 /* Header Top: Aligns Logo (left) and Navigation (right) */
@@ -84,13 +84,19 @@ a:hover { color: #0056b3; }
 /* --- Navigation (Aligned to the right in header-top) --- */
 .main-nav {
     display: flex;
-    gap: 15px;
+    gap: 5px; /* Reduced gap since padding will increase spacing */
+    
+    /* === BORDER ADDITION START === */
+    border: 1px solid #ccc; 
+    border-radius: 5px;
+    padding: 5px 10px;
+    /* === BORDER ADDITION END === */
 }
 
 /* Default link color for white background pages (Service, About, Contact) */
 .main-nav a {
     color: var(--primary-color); 
-    padding: 5px 10px;
+    padding: 5px 10px; /* Added padding to links */
     font-weight: 500;
     text-transform: uppercase;
     font-size: 0.9em;
@@ -113,7 +119,7 @@ a:hover { color: #0056b3; }
 .main-header.dark-header .site-branding {
     color: var(--white); 
     padding: 40px 0;
-    text-align: center; /* Center the branding on the dark hero */
+    text-align: center;
 }
 
 .main-header.dark-header .site-branding h1 {
@@ -140,176 +146,4 @@ a:hover { color: #0056b3; }
 }
 .hero-section.small-hero {
     padding: 20px 0 40px 0;
-}
-
-/* --- 4. Content Sections (Standard) --- */
-section {
-    padding: 40px 0;
-    border-bottom: 1px solid #e9ecef;
-}
-section:last-of-type { border-bottom: none; }
-
-.section-description {
-    font-style: italic;
-    color: #6c757d;
-    margin-bottom: 30px;
-    text-align: center;
-}
-
-/* --- 5. Services Grid & Cards --- */
-.grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: var(--spacing);
-    margin-top: 30px;
-}
-
-.card {
-    background: var(--light-bg);
-    padding: var(--spacing);
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-    transition: transform 0.3s;
-}
-.card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
-}
-
-.card ul {
-    list-style: disc;
-    margin-left: 20px;
-    padding-top: 10px;
-    color: #555;
-}
-
-/* --- 6. Buttons & Links --- */
-.button {
-    display: inline-block;
-    background-color: var(--primary-color);
-    color: var(--white) !important;
-    padding: 12px 25px;
-    border-radius: 5px;
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    border: none;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-.button:hover {
-    background-color: #0056b3;
-    text-decoration: none;
-}
-
-.secondary-button {
-    background-color: var(--secondary-color);
-    color: var(--white) !important;
-    margin-left: var(--spacing);
-}
-
-.secondary-button:hover {
-    background-color: #1a1e21;
-}
-
-.welcome-links {
-    display: flex;
-    justify-content: center;
-    gap: var(--spacing);
-    margin-top: 30px;
-}
-
-/* --- 7. Contact Form Styles (FINAL FIXES) --- */
-.contact-form {
-    max-width: 600px;
-    margin: 30px auto 0;
-    padding: 20px;
-    background: var(--light-bg);
-    border-radius: 8px;
-    /* Removed center alignment to allow full width fields */
-}
-
-.form-group {
-    margin-bottom: 15px;
-}
-
-.form-group label {
-    display: block; 
-    margin-bottom: 5px;
-    font-weight: bold;
-}
-
-/* FIX: This ensures ALL input fields (Name, Email) and textarea take up 100% of the available form width */
-.contact-form input[type="text"],
-.contact-form input[type="email"],
-.contact-form textarea {
-    width: 100%; 
-    padding: 10px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    font-size: 1em;
-    display: block; /* Ensure they behave like block elements */
-}
-
-.contact-form textarea {
-    resize: vertical;
-}
-
-.contact-info {
-    text-align: left; /* Aligns contact info left to match heading */
-    margin-bottom: 30px;
-    margin-top: 10px;
-}
-
-/* --- 8. Footer --- */
-footer {
-    background: var(--secondary-color);
-    color: #aaa;
-    text-align: center;
-    padding: 20px 0;
-    margin-top: 20px;
-    font-size: 0.9em;
-}
-
-.social a {
-    color: var(--white);
-    margin: 0 5px;
-}
-.social a:hover {
-    color: var(--primary-color);
-}
-
-/* --- 9. Media Queries (Responsiveness) --- */
-@media (max-width: 768px) {
-    .header-top {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .main-nav {
-        flex-direction: column;
-        align-items: flex-start;
-        width: 100%;
-        gap: 0;
-        border-top: 1px solid #eee;
-        padding-top: 10px;
-    }
-
-    .dark-header .main-nav {
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    
-    .main-nav a {
-        padding: 5px 0;
-        margin: 0;
-    }
-
-    .welcome-links {
-        flex-direction: column;
-        gap: 15px;
-    }
-    .secondary-button {
-        margin-left: 0;
-    }
 }
