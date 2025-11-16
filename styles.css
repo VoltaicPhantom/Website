@@ -8,7 +8,47 @@
     --white: #fff;
     --spacing: 20px;
 }
+/* --- New Styles for Logo Integration --- */
 
+/* Adjust the header background/padding to accommodate the logo, if needed */
+.hero {
+    background: var(--dark-bg);
+    color: var(--white);
+    padding-bottom: 60px; /* Kept large padding for hero text */
+    text-align: center;
+}
+
+/* Container for the logo area */
+.header-top {
+    /* Use flexbox to potentially space out logo and other top-level elements */
+    display: flex;
+    justify-content: center; /* Center the logo by default */
+    align-items: center;
+    padding-top: 20px;
+    padding-bottom: 20px;
+}
+
+.logo img {
+    /* Set max height for the logo to control its size */
+    height: auto;
+    max-height: 80px; /* Adjust this value as needed for your design */
+    width: auto;
+}
+
+/* Optional: Add a subtle border or distinction for the header area */
+.header-top {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Adjust the hero content area to fit below the new header-top div */
+.hero-content {
+    padding-top: 30px; /* Space between logo area and text */
+}
+
+/* Small Hero adjustment for other pages to keep the logo visible */
+.small-hero .hero-content {
+    padding-top: 10px;
+}
 * {
     box-sizing: border-box;
     margin: 0;
@@ -242,4 +282,5 @@ footer {
         display: block;
         margin: 5px 0;
     }
+
 }
