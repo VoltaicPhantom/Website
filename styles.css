@@ -67,7 +67,7 @@ a:hover { color: #0056b3; }
 
 .logo img {
     height: auto;
-    max-height: 60px; 
+    max-height: 69px; /* Increased from 60px by 15% */
     width: auto;
     display: block;
 }
@@ -269,7 +269,7 @@ section:last-of-type { border-bottom: none; }
 
 /* --- 8. Footer --- */
 footer {
-    background: var(--secondary-color); /* FIX: Ensures dark background */
+    background: var(--secondary-color); 
     color: #aaa;
     text-align: center;
     padding: 20px 0;
@@ -277,7 +277,7 @@ footer {
 }
 
 .social a {
-    color: var(--white); /* FIX: Ensures links are white/visible */
+    color: var(--white); 
     margin: 0 5px;
 }
 .social a:hover {
@@ -322,6 +322,6 @@ footer {
     }
     
     .site-branding .button {
-        max-width: 100%; /* Full width on small screens */
+        max-width: 100%; 
     }
 }
