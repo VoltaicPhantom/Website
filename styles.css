@@ -84,19 +84,19 @@ a:hover { color: #0056b3; }
 /* --- Navigation (Aligned to the right in header-top) --- */
 .main-nav {
     display: flex;
-    gap: 5px; /* Reduced gap since padding will increase spacing */
-    
-    /* === BORDER ADDITION START === */
-    border: 1px solid #ccc; 
-    border-radius: 5px;
-    padding: 5px 10px;
-    /* === BORDER ADDITION END === */
+    /* Updated border to be like a card/form box */
+    background: var(--light-bg); /* Match light background of cards/forms */
+    border: 1px solid #ced4da; /* Match border of form inputs */
+    border-radius: 8px; /* Match border-radius of cards/forms */
+    padding: 10px 15px; /* Adjust padding to make it look like a box */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Subtle shadow for depth */
+    gap: 15px; /* Space between the links */
 }
 
 /* Default link color for white background pages (Service, About, Contact) */
 .main-nav a {
     color: var(--primary-color); 
-    padding: 5px 10px; /* Added padding to links */
+    padding: 0; /* No internal padding needed on links, padding is on the .main-nav container */
     font-weight: 500;
     text-transform: uppercase;
     font-size: 0.9em;
@@ -104,11 +104,21 @@ a:hover { color: #0056b3; }
 }
 
 /* Link color for the dark Home page header */
+.dark-header .main-nav {
+    background: transparent; /* Remove background on dark header */
+    border: 1px solid rgba(255, 255, 255, 0.3); /* Lighter border on dark background */
+    box-shadow: none;
+}
+
 .dark-header .main-nav a {
     color: var(--white);
 }
 
 .main-nav a:hover {
+    color: #0056b3;
+    border-bottom: 2px solid #0056b3;
+}
+.dark-header .main-nav a:hover {
     color: var(--primary-color);
     border-bottom: 2px solid var(--primary-color);
 }
@@ -147,3 +157,142 @@ a:hover { color: #0056b3; }
 .hero-section.small-hero {
     padding: 20px 0 40px 0;
 }
+
+/* --- 4. Content Sections (Standard) --- */
+section {
+    padding: 40px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+section:last-of-type { border-bottom: none; }
+
+.section-description {
+    font-style: italic;
+    color: #6c757d;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+/* --- 5. Services Grid & Cards --- */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing);
+    margin-top: 30px;
+}
+
+.card {
+    background: var(--light-bg);
+    padding: var(--spacing);
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s;
+}
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.card ul {
+    list-style: disc;
+    margin-left: 20px;
+    padding-top: 10px;
+    color: #555;
+}
+
+/* --- 6. Buttons & Links --- */
+.button {
+    display: inline-block;
+    background-color: var(--primary-color);
+    color: var(--white) !important;
+    padding: 12px 25px;
+    border-radius: 5px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.button:hover {
+    background-color: #0056b3;
+    text-decoration: none;
+}
+
+.secondary-button {
+    background-color: var(--secondary-color);
+    color: var(--white) !important;
+    margin-left: var(--spacing);
+}
+
+.secondary-button:hover {
+    background-color: #1a1e21;
+}
+
+.welcome-links {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing);
+    margin-top: 30px;
+}
+
+/* --- 7. Contact Form Styles --- */
+.contact-form {
+    max-width: 600px;
+    margin: 30px auto 0;
+    padding: 20px;
+    background: var(--light-bg);
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); /* Added for consistency with cards */
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block; 
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.contact-form input[type="text"],
+.contact-form input[type="email"],
+.contact-form textarea {
+    width: 100%; 
+    padding: 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 1em;
+    display: block;
+}
+
+.contact-form textarea {
+    resize: vertical;
+}
+
+.contact-info {
+    text-align: left; 
+    margin-bottom: 30px;
+    margin-top: 10px;
+}
+
+/* --- 8. Footer --- */
+footer {
+    background: var(--secondary-color);
+    color: #aaa;
+    text-align: center;
+    padding: 20px 0;
+    margin-top: 20px;
+    font-size: 0.9em;
+}
+
+.social a {
+    color: var(--white);
+    margin: 0 5px;
+}
+.social a:hover {
+    color: var(--primary-color);
+}
+
+/* --- 9
