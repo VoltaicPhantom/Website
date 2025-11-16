@@ -1,0 +1,245 @@
+/* --- 1. Global Reset & Base Styles --- */
+:root {
+    --primary-color: #007bff; /* Blue for links/buttons */
+    --secondary-color: #343a40; /* Dark text */
+    --light-bg: #f8f9fa;
+    --dark-bg: #212529;
+    --text-color: #333;
+    --white: #fff;
+    --spacing: 20px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: var(--text-color);
+    background-color: var(--white);
+}
+
+.container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--spacing) 0;
+}
+
+/* --- 2. Typography --- */
+h1, h2, h3 {
+    margin-bottom: 0.5em;
+    font-weight: 600;
+    color: var(--secondary-color);
+}
+
+h1 { font-size: 2.5em; }
+h2 { font-size: 2em; margin-top: 1em; }
+h3 { font-size: 1.5em; }
+
+p {
+    margin-bottom: 1em;
+}
+
+a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+a:hover {
+    color: #0056b3;
+}
+
+/* --- 3. Header & Hero Section --- */
+.hero {
+    background: var(--dark-bg);
+    color: var(--white);
+    padding: 60px 0;
+    text-align: center;
+}
+
+.hero h1 {
+    color: var(--white);
+    font-size: 3em;
+}
+
+.hero p {
+    font-size: 1.25em;
+    margin-bottom: 30px;
+    color: #ccc;
+}
+
+/* Style for About/Contact page header (small-hero) */
+.small-hero {
+    padding: 40px 0;
+    text-align: center;
+}
+.small-hero h1 {
+    font-size: 2em;
+}
+
+/* --- 4. Navigation --- */
+nav {
+    background: var(--secondary-color);
+    text-align: center;
+    padding: 15px 0;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+nav a {
+    color: var(--white);
+    padding: 10px 20px;
+    margin: 0 10px;
+    font-weight: 500;
+    border-bottom: 2px solid transparent; /* For hover effect */
+}
+
+nav a:hover {
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--primary-color);
+}
+
+/* --- 5. Sections --- */
+section {
+    padding: 40px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+section:last-of-type {
+    border-bottom: none;
+}
+
+.section-description {
+    font-style: italic;
+    color: #6c757d;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+/* --- 6. Services Grid & Cards --- */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing);
+    margin-top: 30px;
+}
+
+.card {
+    background: var(--light-bg);
+    padding: var(--spacing);
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.card ul {
+    list-style: disc;
+    margin-left: 20px;
+    padding-top: 10px;
+    color: #555;
+}
+
+/* --- 7. Buttons & Links --- */
+.button {
+    display: inline-block;
+    background-color: var(--primary-color);
+    color: var(--white) !important;
+    padding: 12px 25px;
+    border-radius: 5px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.button:hover {
+    background-color: #0056b3;
+    text-decoration: none;
+}
+
+/* --- 8. Contact Form Styles --- */
+.contact-form {
+    max-width: 600px;
+    margin: 30px auto 0;
+    padding: 20px;
+    background: var(--light-bg);
+    border-radius: 8px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.contact-form input[type="text"],
+.contact-form input[type="email"],
+.contact-form textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 1em;
+}
+
+.contact-form textarea {
+    resize: vertical;
+}
+
+.contact-info {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+/* --- 9. Footer --- */
+footer {
+    background: var(--secondary-color);
+    color: #aaa;
+    text-align: center;
+    padding: 20px 0;
+    margin-top: 20px;
+    font-size: 0.9em;
+}
+
+.social a {
+    color: var(--white);
+    margin: 0 5px;
+}
+.social a:hover {
+    color: var(--primary-color);
+}
+
+/* --- 10. Media Queries (Responsiveness) --- */
+@media (max-width: 768px) {
+    .hero {
+        padding: 40px 0;
+    }
+
+    .hero h1 {
+        font-size: 2em;
+    }
+
+    nav {
+        padding: 10px 0;
+    }
+
+    nav a {
+        display: block;
+        margin: 5px 0;
+    }
+}
