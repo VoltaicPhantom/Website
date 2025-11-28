@@ -11,9 +11,14 @@
     <h1>🃏 Simple Uno Clone</h1>
 
     <div id="game-container">
+        
         <div id="opponent-area">
-            <p>🤖 Computer Hand:</p>
-            <div id="computer-hand-size" class="hand-size"></div>
+            <h3>🤖 Opponents:</h3>
+            <div class="opponent-hands-container">
+                <div><p>Computer 1:</p><div id="computer-hand-size-1" class="hand-size"></div></div>
+                <div><p>Computer 2:</p><div id="computer-hand-size-2" class="hand-size"></div></div>
+                <div><p>Computer 3:</p><div id="computer-hand-size-3" class="hand-size"></div></div>
+            </div>
         </div>
         
         <div id="discard-area">
@@ -32,9 +37,9 @@
         <div id="player-area">
             <p>👤 Your Hand:</p>
             <div id="player-hand-container">
-                </div>
+            </div>
             <button id="draw-button" onclick="handlePlayerAction(null)">Draw Card</button>
-            <button id="uno-button" disabled>UNO!</button>
+            <button id="uno-button" disabled onclick="declareUno()">UNO!</button>
         </div>
     </div>
 
@@ -42,9 +47,5 @@
     <button id="start-button" onclick="startGame()">Start New Game</button>
 
     <script src="game.js"></script>
-    <script>
-        // Start the game automatically when the page loads
-        document.addEventListener('DOMContentLoaded', startGame);
-    </script>
 </body>
 </html>
