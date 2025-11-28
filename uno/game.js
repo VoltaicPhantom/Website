@@ -91,7 +91,6 @@ function dealInitialCards() {
         }
     }
 
-    // Flip the first card to start the discard pile (must be non-action, non-wild)
     let startCard;
     do {
         if (gameState.deck.length === 0) break; 
@@ -147,8 +146,8 @@ function isExactMatch(card1, card2) {
  */
 function calculateNextPlayer(playerIndex, direction, skips = 0) {
     let nextPlayer = playerIndex;
-    // Skips + 1 (for the current turn passing)
-    for (let i = 0; i <= skips; i++) { 
+    let steps = skips + 1;
+    for (let i = 0; i < steps; i++) { 
         nextPlayer = (nextPlayer + direction) % NUM_PLAYERS;
         if (nextPlayer < 0) nextPlayer += NUM_PLAYERS;
     }
@@ -162,7 +161,6 @@ function applyCardEffect(card, playerIndex) {
     const playerLabel = playerIndex === 0 ? 'You' : `Computer ${playerIndex}`;
     let skips = 0;
     
-    // Clear nextColor if the new card is NOT a wild, preventing color persistence
     if (card.color !== 'BL' && gameState.topCard.nextColor) {
         delete gameState.topCard.nextColor;
     }
@@ -216,7 +214,82 @@ function reshuffleDeck() {
     return true;
 }
 
-// --- 3. UI/Rendering (The Fix for Styled Cards) ---
+// --- 3. AI Intelligence (New Logic) ---
+
+/**
+ * Implements the core AI strategy to select the best card to play.
+ * Strategy: Prevent opponent wins > Action Cards > High Numbers > Low Numbers > Wilds
+ */
+function findBestPlayableCard(hand, topCard, playerIndex) {
+    const nextPlayerIndex = calculateNextPlayer(playerIndex, gameState.direction, 0); // Player to be affected next
+    const nextPlayerHandSize = gameState.hands[nextPlayerIndex].length;
+    
+    let bestIndex = -1;
+    let candidates = [];
+
+    hand.forEach((card, index) => {
+        if (canPlay(card, topCard)) {
+            candidates.push({ card, index });
+        }
+    });
+
+    if (candidates.length === 0) {
+        return -1; 
+    }
+
+    // --- PRIORITY 1: BLOCK NEXT PLAYER (if they have 1 or 2 cards) ---
+    if (nextPlayerHandSize <= 2) {
+        // Prefer +4, then +2, then Skip
+        const drawFour = candidates.find(c => c.card.value === 'W4');
+        if (drawFour) return drawFour.index;
+
+        const drawTwo = candidates.find(c => c.card.value === 'D2');
+        if (drawTwo) return drawTwo.index;
+
+        const skip = candidates.find(c => c.card.value === 'S');
+        if (skip) return skip.index;
+    }
+
+    // --- PRIORITY 2: Action Cards (Reverse/Skip/DrawTwo) that are not Wilds ---
+    // If no immediate threat, use a Reverse or Draw Two to keep pressure or change direction
+    const reverse = candidates.find(c => c.card.value === 'R');
+    if (reverse) return reverse.index;
+
+    // Play Skip/Draw Two if we still have them, but don't reserve them aggressively if no immediate threat.
+    // If we get here, it means we didn't use them to block P1 (threat), so we use them now.
+    const actionCard = candidates.find(c => ['S', 'D2'].includes(c.card.value));
+    if (actionCard) return actionCard.index;
+
+    // --- PRIORITY 3: High-Value Number Cards (5-9) to clear points ---
+    // Find the highest number card (9, 8, 7, 6, 5)
+    let bestNumberCandidate = candidates
+        .filter(c => typeof c.card.value === 'number')
+        .sort((a, b) => b.card.value - a.card.value); 
+        
+    if (bestNumberCandidate.length > 0 && bestNumberCandidate[0].card.value >= 5) {
+        return bestNumberCandidate[0].index;
+    }
+    
+    // --- PRIORITY 4: Low-Value Number Cards (0-4) ---
+    if (bestNumberCandidate.length > 0) {
+        // If we only have low numbers, play the highest one among them (4, 3, 2, 1, 0)
+        return bestNumberCandidate[0].index;
+    }
+    
+    // --- PRIORITY 5: Wild Cards (W, W4) only if no other choice (or as a last resort) ---
+    // Note: W4 would have been played already if P1 was close
+    const nonDrawWild = candidates.find(c => c.card.value === 'W');
+    if (nonDrawWild) return nonDrawWild.index;
+    
+    const lastResortWild = candidates.find(c => c.card.color === 'BL');
+    if (lastResortWild) return lastResortWild.index;
+
+    // Should not be reached if candidates.length > 0
+    return candidates[0].index; 
+}
+
+
+// --- 4. UI/Rendering (Styled Cards) ---
 
 /**
  * Helper function to determine the display text for a card value.
@@ -238,14 +311,12 @@ function getCardDisplayText(value) {
 function renderCard(card, isClickable = false, index = -1) {
     const cardElem = document.createElement('div');
     
-    // Determine the display color: physical color OR the chosen wild color
     const displayColor = card.nextColor || card.color;
     
     cardElem.className = `card ${displayColor}`;
     cardElem.dataset.value = card.value;
     cardElem.textContent = getCardDisplayText(card.value);
     
-    // Add the has-next-color class for wild cards to enable the border styling
     if (card.color === 'BL' && card.nextColor) {
         cardElem.classList.add('has-next-color');
     }
@@ -284,19 +355,18 @@ function renderGame() {
     
     START_BUTTON.style.display = 'none';
 
-    // 1. Update Status Message (Includes Draw Penalty info)
+    // 1. Update Status Message
     if (gameState.currentPlayer === 0) {
-        let drawInfo = gameState.pendingDraw > 0 ? ` (Must Draw ${gameState.pendingDraw} or play Draw card.)` : '';
+        let drawInfo = gameState.pendingDraw > 0 ? ` (Must Draw ${gameState.pendingDraw}.)` : '';
         STATUS.textContent = gameState.unoAwaitingCall ? 'YOUR TURN! CALL UNO!' : `Your turn! ${drawInfo}`;
     } else {
         STATUS.textContent = `Computer ${gameState.currentPlayer}'s turn...`;
     }
 
-    // 2. Update Top Card (The Renderer Fix)
+    // 2. Update Top Card
     TOP_CARD_ELEM.innerHTML = '';
     const topCardElement = renderCard(gameState.topCard);
     
-    // Special handling for Wild Card border when active color is chosen
     if (gameState.topCard.color === 'BL' && gameState.topCard.nextColor) {
         topCardElement.style.borderColor = `var(--color-${gameState.topCard.nextColor})`;
     } else {
@@ -320,7 +390,6 @@ function renderGame() {
             let statusText = `${gameState.hands[playerIndex].length} cards`;
             elem.textContent = statusText;
             
-            // Highlight current player element (using player-slot class from HTML)
             const container = elem.closest('.player-slot');
             if (container) {
                 if (gameState.currentPlayer === playerIndex) {
@@ -357,7 +426,6 @@ function showStatus(message) {
  */
 function showColorPicker(playerIndex, wildValue) {
     if (playerIndex === 0) {
-        // Human player
         COLOR_PICKER_ELEM.style.display = 'flex';
         DRAW_BUTTON.disabled = true;
         UNO_BUTTON.disabled = true;
@@ -373,7 +441,7 @@ function showColorPicker(playerIndex, wildValue) {
         });
         
     } else {
-        // Computer picks immediately: simple strategy is to pick the color it has the most of
+        // Computer picks best color (the one it has the most of)
         const colors = ['R', 'G', 'B', 'Y'];
         const hand = gameState.hands[playerIndex];
         const colorCounts = hand.reduce((acc, card) => {
@@ -407,12 +475,10 @@ function setWildColor(chosenColor, wildValue) {
         COLOR_PICKER_ELEM.style.display = 'none';
     }
     
-    // Update the top card state with the chosen color
     gameState.topCard = { color: gameState.topCard.color, value: wildValue, nextColor: chosenColor }; 
     
     showStatus(`${playerIndex === 0 ? 'You' : `Computer ${playerIndex}`} chose the color ${chosenColor}.`);
 
-    // Apply card effects (Skip, Draw) and determine next player
     const result = applyCardEffect(gameState.topCard, playerIndex);
     gameState.currentPlayer = result.nextPlayer;
     
@@ -430,6 +496,7 @@ function setWildColor(chosenColor, wildValue) {
 
 /**
  * Handles the logic for drawing a card for the current player.
+ * @returns {boolean} True if a playable card was found/drawn.
  */
 function handleDrawAction(playerIndex) {
     const isHuman = playerIndex === 0;
@@ -444,8 +511,9 @@ function handleDrawAction(playerIndex) {
             if (gameState.deck.length > 0) hand.push(gameState.deck.pop());
             cardsDrawn++;
         }
-        gameState.pendingDraw = 0; // Penalty complete
+        gameState.pendingDraw = 0;
         
+        // Pass turn after penalty draw
         let nextPlayer = calculateNextPlayer(playerIndex, gameState.direction);
         gameState.currentPlayer = nextPlayer;
         
@@ -453,8 +521,9 @@ function handleDrawAction(playerIndex) {
         return false; 
     }
     
-    // --- 2. DRAW TILL MATCH LOGIC ---
+    // --- 2. REGULAR DRAW LOGIC ---
     let playableFound = false;
+    let drawnCards = [];
     
     do {
         if (gameState.deck.length === 0) {
@@ -462,24 +531,27 @@ function handleDrawAction(playerIndex) {
         }
         
         const newCard = gameState.deck.pop();
-        hand.push(newCard);
+        drawnCards.push(newCard);
         cardsDrawn++;
         
         if (canPlay(newCard, gameState.topCard)) {
             playableFound = true;
-            break; 
         }
         
-    } while (!isHuman); // Human draws one, AI draws till match.
+    } while (!isHuman && !playableFound); // AI draws until match or deck runs out
 
+    hand.push(...drawnCards);
+    
     if (isHuman) {
          if (!playableFound) {
               // Human drew one non-playable card, turn passes
               let nextPlayer = calculateNextPlayer(playerIndex, gameState.direction);
               gameState.currentPlayer = nextPlayer;
          }
+         showStatus(`${isHuman ? 'You' : `Computer ${playerIndex}`} drew ${cardsDrawn} card${cardsDrawn === 1 ? '' : 's'}.`);
          return playableFound;
     } else {
+        showStatus(`Computer ${playerIndex} drew ${cardsDrawn} card${cardsDrawn === 1 ? '' : 's'}.`);
         return playableFound; 
     }
 }
@@ -514,12 +586,17 @@ function handlePlayerAction(cardIndex) {
     gameState.discardPile.push(cardPlayed);
     gameState.topCard = cardPlayed;
     
-    if (isPlayerTurn) {
-        gameState.unoAwaitingCall = false; 
+    // Check for win/UNO call after playing the card
+    checkWin(0);
+    if (gameState.gameOver) {
+        renderGame();
+        return;
     }
     
     if (gameState.hands[0].length === 1) {
         gameState.unoAwaitingCall = true;
+    } else {
+        gameState.unoAwaitingCall = false;
     }
 
     if (cardPlayed.color === 'BL') {
@@ -532,9 +609,6 @@ function handlePlayerAction(cardIndex) {
         if (isJumpIn) {
             gameState.currentPlayer = 0; 
         }
-        
-        checkWin(0);
-        handleUnoCheck(0); 
     }
     
     if (gameState.aiActionTimeout) {
@@ -562,76 +636,100 @@ function handleComputerTurn() {
     const computerHand = gameState.hands[playerIndex];
     
     // UNO Penalty Check
-    if (gameState.unoAwaitingCall && playerIndex === calculateNextPlayer(0, gameState.direction)) {
+    const previousPlayer = calculateNextPlayer(playerIndex, -gameState.direction, -1);
+    if (gameState.unoAwaitingCall && previousPlayer === 0) { 
         showStatus(`Computer ${playerIndex} caught you! UNO Penalty: Draw 2 cards.`);
         for (let i = 0; i < 2; i++) {
+            if (gameState.deck.length === 0) reshuffleDeck();
             if (gameState.deck.length > 0) gameState.hands[0].push(gameState.deck.pop());
         }
         gameState.unoAwaitingCall = false; 
     }
 
-    // 1. Find a playable card
-    let playableIndex = -1;
-    for(let i = 0; i < computerHand.length; i++) {
-        if (canPlay(computerHand[i], topCard)) {
-            playableIndex = i;
-            break; 
-        }
-    }
-    
+    // 1. Handle pending draw first
     if (gameState.pendingDraw > 0) {
+        // handleDrawAction handles the penalty draw and passes the turn
         handleDrawAction(playerIndex); 
-    } else if (playableIndex !== -1) {
-        // 2. Play the card
-        const cardPlayed = computerHand[playableIndex];
-        computerHand.splice(playableIndex, 1);
-        gameState.discardPile.push(cardPlayed);
-        gameState.topCard = cardPlayed;
-
-        if (computerHand.length === 1) { 
-             showStatus(`Computer ${playerIndex} called UNO!`);
-        }
-
-        if (cardPlayed.color === 'BL') {
-            showColorPicker(playerIndex, cardPlayed.value); 
-        } else {
-            const result = applyCardEffect(cardPlayed, playerIndex);
-            gameState.currentPlayer = result.nextPlayer;
-            checkWin(playerIndex);
-            handleUnoCheck(playerIndex); 
-        }
-        
+    
     } else {
-        // 3. No playable card, computer must draw (Draw Till Match)
-        const playableFound = handleDrawAction(playerIndex); 
-        
-        if (playableFound) {
-            const newPlayableCard = computerHand[computerHand.length - 1]; 
-            const newPlayableIndex = computerHand.length - 1; 
+        // 2. Find the best playable card using the new smart logic
+        const playableIndex = findBestPlayableCard(computerHand, topCard, playerIndex);
 
-            computerHand.splice(newPlayableIndex, 1);
-            gameState.discardPile.push(newPlayableCard);
-            gameState.topCard = newPlayableCard;
-                
-            if (computerHand.length === 1) {
-                showStatus(`Computer ${playerIndex} called UNO!`);
+        if (playableIndex !== -1) {
+            // 3. Play the card found
+            const cardPlayed = computerHand[playableIndex];
+            const hadTwoCards = computerHand.length === 2;
+            
+            computerHand.splice(playableIndex, 1);
+            gameState.discardPile.push(cardPlayed);
+            gameState.topCard = cardPlayed;
+            
+            checkWin(playerIndex);
+            if (gameState.gameOver) {
+                renderGame();
+                return;
+            }
+            
+            if (hadTwoCards) { 
+                 showStatus(`Computer ${playerIndex} called UNO!`);
             }
 
-            if (newPlayableCard.color === 'BL') {
-                showColorPicker(playerIndex, newPlayableCard.value); 
+            if (cardPlayed.color === 'BL') {
+                showColorPicker(playerIndex, cardPlayed.value); 
+                return; // setWildColor will handle turn progression
             } else {
-                const result = applyCardEffect(newPlayableCard, playerIndex);
+                const result = applyCardEffect(cardPlayed, playerIndex);
                 gameState.currentPlayer = result.nextPlayer;
+            }
+            
+        } else {
+            // 4. No playable card, computer must draw (Draw Till Match)
+            const playableFound = handleDrawAction(playerIndex); 
+            
+            if (playableFound) {
+                // If playable found, it's the last card added.
+                const newPlayableCard = computerHand[computerHand.length - 1]; 
+                const hadOneCardBeforePlay = computerHand.length === 2;
+                
+                computerHand.pop(); 
+                gameState.discardPile.push(newPlayableCard);
+                gameState.topCard = newPlayableCard;
+
                 checkWin(playerIndex);
-                handleUnoCheck(playerIndex); 
+                if (gameState.gameOver) {
+                    renderGame();
+                    return;
+                }
+                
+                if (hadOneCardBeforePlay) { 
+                     showStatus(`Computer ${playerIndex} called UNO!`);
+                }
+
+                if (newPlayableCard.color === 'BL') {
+                    showColorPicker(playerIndex, newPlayableCard.value); 
+                    return; 
+                } else {
+                    const result = applyCardEffect(newPlayableCard, playerIndex);
+                    gameState.currentPlayer = result.nextPlayer;
+                }
+            } else {
+                // AI drew and found no playable card. Turn passes inside handleDrawAction's regular draw logic.
+                // We just need to make sure the status is updated if it wasn't.
+                if (STATUS.textContent.indexOf("Turn passed") === -1) {
+                     let nextPlayer = calculateNextPlayer(playerIndex, gameState.direction);
+                     gameState.currentPlayer = nextPlayer;
+                     showStatus(`Computer ${playerIndex} drew card(s) and passed the turn.`);
+                }
             }
         }
     }
     
+    // Final cleanup and rendering
     if (gameState.aiActionTimeout) {
         clearTimeout(gameState.aiActionTimeout);
         gameState.aiActionTimeout = null;
     }
+    
     renderGame();
 }
 
@@ -650,13 +748,13 @@ function checkWin(playerIndex) {
  * Handles the logic for a player needing to call UNO.
  */
 function handleUnoCheck(playerIndex) {
-    if (gameState.hands[playerIndex].length === 1) {
-        if (playerIndex === 0) {
+    if (playerIndex === 0) {
+        if (gameState.hands[0].length === 1) {
             gameState.unoAwaitingCall = true;
             STATUS.textContent = "You have 1 card! Call UNO or face a penalty on the next turn.";
-        } 
-    } else {
-        gameState.unoAwaitingCall = false;
+        } else {
+            gameState.unoAwaitingCall = false;
+        }
     }
 }
 
