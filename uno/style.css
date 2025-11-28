@@ -40,15 +40,16 @@ body {
     text-align: center;
 }
 
-.opponent-hands-container > div {
+.player-slot {
     flex-grow: 1;
     margin: 0 5px;
     border: 2px solid transparent;
     padding: 5px 0;
+    transition: all 0.2s;
 }
 
 /* Highlight for current player */
-.opponent-hands-container > div.is-current-player {
+.player-slot.is-current-player {
     border-color: #FF5733;
     background-color: #fff0f0;
     border-radius: 5px;
@@ -99,31 +100,29 @@ body {
     transform: none;
 }
 
-/* * Color Classes (Now using variables defined in :root) */
+/* * Color Classes */
 .card.R, .color-btn.R { background-color: var(--color-R); color: white; } 
 .card.G, .color-btn.G { background-color: var(--color-G); color: white; } 
 .card.B, .color-btn.B { background-color: var(--color-B); color: white; } 
 .card.Y, .color-btn.Y { background-color: var(--color-Y); color: #333; } 
 .card.BL { background-color: #111111; color: white; border: 3px solid #E0E0E0; } 
 
-/* Wild Card Active Color Border (Set by JS, relies on variables) */
+/* Wild Card Active Color Border (Set by JS) */
 .card.has-next-color {
     border-width: 4px;
 }
 
-/* --------------------------------------- */
 /* --- TYPE-SPECIFIC STYLING (Symbols) --- */
-/* --------------------------------------- */
 
 /* Number Cards (0-9) */
 .card:not(.BL):not([data-value="S"]):not([data-value="R"]):not([data-value="D2"]) {
     font-size: 40px;
 }
 
-/* Action Card Symbols */
+/* Action Card Symbols (data-value "S" is 🚫, "R" is ⟲) */
 .card[data-value="D2"] { font-size: 36px; } /* +2 */
-.card[data-value="S"] { font-size: 40px; } /* 🚫 */
-.card[data-value="R"] { font-size: 40px; } /* ⟲ */
+.card[data-value="S"] { font-size: 40px; } 
+.card[data-value="R"] { font-size: 40px; } 
 
 /* Wild Cards (W/W4) */
 .card.BL[data-value="W"] {
@@ -137,7 +136,7 @@ body {
 .card.BL[data-value="W4"] {
     background-color: #111111;
     color: white;
-    font-size: 36px; /* +4 */
+    font-size: 36px;
 }
 
 #discard-area {
