@@ -1,0 +1,85 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    color: #333;
+    text-align: center;
+}
+
+#game-container {
+    max-width: 800px;
+    margin: 20px auto;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* --- Card Styles --- */
+.card {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 60px;
+    height: 90px;
+    margin: 5px;
+    border-radius: 8px;
+    font-size: 1.5em;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+    border: 3px solid transparent;
+    transition: transform 0.1s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.card.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Color Classes */
+.card.R, .color-btn.R { background-color: #FF0000; color: white; } /* Red */
+.card.G, .color-btn.G { background-color: #00AA00; color: white; } /* Green */
+.card.B, .color-btn.B { background-color: #0000FF; color: white; } /* Blue */
+.card.Y, .color-btn.Y { background-color: #CCCC00; color: white; } /* Yellow */
+.card.BL { background-color: #333; color: white; } /* Black (Wild) */
+
+/* Special Card Styling for Top Card */
+#discard-area {
+    margin: 20px 0;
+    min-height: 120px; /* Space for the top card */
+}
+
+/* Player Hand Layout */
+#player-hand-container {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    min-height: 100px;
+}
+
+/* Action Buttons */
+#draw-button, #start-button, .color-btn {
+    padding: 10px 15px;
+    margin: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+#start-button {
+    background-color: #007BFF;
+    color: white;
+}
+
+#color-picker {
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+}
