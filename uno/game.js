@@ -10,11 +10,11 @@ const NUM_PLAYERS = 4; // Set the game to 4 players: Human (0) + 3 AI (1, 2, 3)
 const STATUS = document.getElementById('status-message');
 const TOP_CARD_ELEM = document.getElementById('top-card');
 const PLAYER_HAND_ELEM = document.getElementById('player-hand-container');
-// UPDATED REFERENCES
+// UPDATED REFERENCES for 4-player HTML (Players 1, 2, 3)
 const COMPUTER_SIZE_ELEMS = [
-    document.getElementById('computer-hand-size-1'), // Player 1
-    document.getElementById('computer-hand-size-2'), // Player 2
-    document.getElementById('computer-hand-size-3')  // Player 3
+    document.getElementById('computer-hand-size-1'), 
+    document.getElementById('computer-hand-size-2'), 
+    document.getElementById('computer-hand-size-3')  
 ];
 const COLOR_PICKER_ELEM = document.getElementById('color-picker');
 const DRAW_BUTTON = document.getElementById('draw-button');
@@ -42,7 +42,6 @@ function createDeck() {
     }
 
     // 2. Colored Action Cards (2 of each per color)
-    // 'S': Skip, 'R': Reverse, 'D2': Draw Two
     for (const color of colors) {
         for (let i = 0; i < 2; i++) {
             deck.push({ color: color, value: 'S' });
@@ -52,48 +51,38 @@ function createDeck() {
     }
     
     // 3. Wild Cards (4 of each)
-    // 'W': Wild, 'W4': Wild Draw Four
     for (let i = 0; i < 4; i++) {
         deck.push({ color: 'BL', value: 'W' });
         deck.push({ color: 'BL', value: 'W4' });
     }
 
-    return shuffle(deck);
-}
-
-/**
- * Shuffles an array in place using the Fisher-Yates algorithm.
- * @param {Array} array - The array to shuffle.
- * @returns {Array} The shuffled array.
- */
-function shuffle(array) {
-    let currentIndex = array.length, randomIndex;
-    
+    // Fisher-Yates shuffle
+    let currentIndex = deck.length, randomIndex;
     while (currentIndex !== 0) {
         randomIndex = Math.floor(Math.random() * currentIndex);
         currentIndex--;
-        [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+        [deck[currentIndex], deck[randomIndex]] = [deck[randomIndex], deck[currentIndex]];
     }
 
-    return array;
+    return deck;
 }
 
 /**
  * Initializes the game state.
  */
 function initGame() {
-    // Game variables
     gameState.deck = createDeck();
     gameState.discardPile = [];
     // Initialize hands for all players (0=Human, 1-3=AI)
     gameState.hands = Array.from({ length: NUM_PLAYERS }, () => []); 
     gameState.topCard = null;
-    gameState.currentPlayer = 0; // 0 for Human
-    gameState.direction = 1; // 1 for clockwise, -1 for counter-clockwise
+    gameState.currentPlayer = 0; 
+    gameState.direction = 1; // 1: clockwise, -1: counter-clockwise
     gameState.pendingDraw = 0; 
     gameState.unoAwaitingCall = false; 
     gameState.gameOver = false;
     gameState.winner = -1;
+    gameState.aiActionTimeout = null; // Used to delay AI moves and manage penalty checks
 }
 
 /**
@@ -107,22 +96,16 @@ function dealInitialCards() {
         }
     }
 
-    // Flip the first card to start the discard pile
+    // Flip the first card to start the discard pile (must be non-action, non-wild)
     let startCard;
     do {
-        // Reshuffle if deck is truly empty (unlikely at start)
         if (gameState.deck.length === 0) {
-            if (gameState.discardPile.length > 1) {
-                const topCard = gameState.discardPile.pop(); 
-                gameState.deck = shuffle(gameState.discardPile);
-                gameState.discardPile = [topCard];
-            } else {
-                 console.error("Deck empty at startup!");
-                 break; 
-            }
+            // Safety measure
+            console.error("Deck empty at startup!");
+            break; 
         }
         startCard = gameState.deck.pop();
-    } while (startCard.color === 'BL' || startCard.value === 'D2' || startCard.value === 'S' || startCard.value === 'R'); 
+    } while (startCard.color === 'BL' || ['D2', 'S', 'R', 'W', 'W4'].includes(startCard.value)); 
     
     gameState.discardPile.push(startCard);
     gameState.topCard = startCard;
@@ -130,13 +113,20 @@ function dealInitialCards() {
 
 /**
  * Starts a new game.
- * Must be globally accessible.
  */
 function startGame() {
+    // Clear any pending AI action from previous games
+    if (gameState.aiActionTimeout) {
+        clearTimeout(gameState.aiActionTimeout);
+    }
     initGame();
     dealInitialCards();
     showStatus(`Game started! It's your turn.`);
     gameState.gameOver = false;
+    
+    // Check if the starting card requires a color choice (e.g., if we allow house rules for wild start)
+    // For standard UNO, the starting card is always non-wild.
+
     renderGame();
     
     START_BUTTON.textContent = 'Restart Game';
@@ -147,7 +137,7 @@ function startGame() {
 
 /**
  * Converts a card object to its display text/symbol.
- * (No change here, maintains the Ø and ⟲ symbols)
+ * (Ensures symbols Ø and ⟲ are used)
  */
 function getCardText(card) {
     if (card.color === 'BL') {
@@ -167,9 +157,13 @@ function getCardText(card) {
  */
 function canPlay(card, topCard) {
     if (card.color === 'BL') return true;
-    if (card.color === topCard.color) return true;
     if (card.value === topCard.value) return true;
-    if (topCard.color === 'BL' && topCard.nextColor === card.color) return true;
+    
+    // Check match by the top card's physical color OR the chosen color (nextColor)
+    const activeColor = topCard.nextColor || topCard.color;
+
+    if (card.color === activeColor) return true;
+    
     return false;
 }
 
@@ -181,15 +175,16 @@ function isExactMatch(card1, card2) {
 }
 
 /**
- * Calculates the index of the next player.
+ * Calculates the index of the next player, handling skips.
  * @param {number} playerIndex - The current player index.
  * @param {number} direction - The current direction (1 or -1).
- * @param {number} skipCount - The number of players to skip (0 or 1).
+ * @param {number} skips - The number of players to skip (0 or 1 for Skip card).
  * @returns {number} The index of the next player.
  */
-function calculateNextPlayer(playerIndex, direction, skipCount = 0) {
+function calculateNextPlayer(playerIndex, direction, skips = 0) {
     let nextPlayer = playerIndex;
-    for (let i = 0; i <= skipCount; i++) { // i=0 is for the turn passing itself
+    // Iterate skips + 1 (for the current turn passing)
+    for (let i = 0; i <= skips; i++) { 
         nextPlayer = (nextPlayer + direction) % NUM_PLAYERS;
         if (nextPlayer < 0) nextPlayer += NUM_PLAYERS;
     }
@@ -200,10 +195,10 @@ function calculateNextPlayer(playerIndex, direction, skipCount = 0) {
  * Applies the effect of an action card.
  */
 function applyCardEffect(card, playerIndex) {
-    let nextPlayer = calculateNextPlayer(playerIndex, gameState.direction);
     let message = '';
 
     const playerLabel = playerIndex === 0 ? 'You' : `Computer ${playerIndex}`;
+    let nextPlayer = calculateNextPlayer(playerIndex, gameState.direction);
 
     switch (card.value) {
         case 'S':
@@ -213,7 +208,8 @@ function applyCardEffect(card, playerIndex) {
         case 'R':
             gameState.direction *= -1;
             message = `${playerLabel} played a REVERSE (⟲). Direction changed.`;
-            // NOTE: In 4+ player games, Reverse does NOT skip the next player.
+            // NOTE: In 4 players, Reverse does NOT skip the next player.
+            nextPlayer = calculateNextPlayer(playerIndex, gameState.direction);
             break;
         case 'D2':
             gameState.pendingDraw += 2;
@@ -243,11 +239,13 @@ function applyCardEffect(card, playerIndex) {
  * Updates the entire game display based on the current gameState.
  */
 function renderGame() {
-    // 1. Top Card (Logic remains the same for symbols and wild border)
+    // 1. Top Card
     if (gameState.topCard) {
+        // Set the primary class based on the card's physical color
         TOP_CARD_ELEM.className = `card ${gameState.topCard.color}`;
         TOP_CARD_ELEM.textContent = getCardText(gameState.topCard);
         
+        // --- WILD CARD BORDER FIX ---
         if (gameState.topCard.color === 'BL' && gameState.topCard.nextColor) {
              TOP_CARD_ELEM.classList.add('has-next-color');
              TOP_CARD_ELEM.style.borderColor = `var(--color-${gameState.topCard.nextColor})`; 
@@ -258,6 +256,7 @@ function renderGame() {
     } else {
         TOP_CARD_ELEM.className = 'card';
         TOP_CARD_ELEM.textContent = 'Deck';
+        TOP_CARD_ELEM.style.borderColor = 'transparent'; 
     }
 
     // 2. Player Hand (Player 0)
@@ -268,7 +267,7 @@ function renderGame() {
     playerHand.forEach((card, index) => {
         const cardElement = document.createElement('div');
         const playable = isPlayerTurn && canPlay(card, gameState.topCard);
-        const isJumpIn = !isPlayerTurn && isExactMatch(card, gameState.topCard);
+        const isJumpIn = !isPlayerTurn && isExactMatch(card, gameState.topCard); 
 
         cardElement.className = `card ${card.color} ${playable || isJumpIn ? '' : 'disabled'}`;
         cardElement.setAttribute('data-color', card.color);
@@ -276,6 +275,7 @@ function renderGame() {
         cardElement.textContent = getCardText(card);
         
         if (playable || isJumpIn) {
+            // Attach play handler
             cardElement.onclick = () => handlePlayerAction(index);
         } else {
             cardElement.onclick = null;
@@ -297,7 +297,7 @@ function renderGame() {
     }
     
     // 4. Button States
-    DRAW_BUTTON.disabled = !isPlayerTurn || gameState.pendingDraw > 0;
+    DRAW_BUTTON.disabled = !isPlayerTurn; 
     UNO_BUTTON.disabled = !(isPlayerTurn && playerHand.length === 2);
     
     // 5. Game End State
@@ -311,19 +311,27 @@ function renderGame() {
         
         // Start computer move if it's an AI's turn (1, 2, or 3)
         if (gameState.currentPlayer !== 0 && COLOR_PICKER_ELEM.style.display === 'none') {
-            setTimeout(computerMove, 1500); 
+            // Use the wrapper to handle AI flow
+            if (!gameState.aiActionTimeout) {
+                 gameState.aiActionTimeout = setTimeout(handleComputerTurn, 1500); 
+            }
         }
     }
 }
 
-// ... (showStatus remains the same)
+/**
+ * Displays a status message to the user.
+ */
+function showStatus(message) {
+    STATUS.textContent = message;
+}
 
 /**
  * Shows the color picker for Wild cards.
  */
 function showColorPicker(playerIndex, wildValue) {
     if (playerIndex === 0) {
-        COLOR_PICKER_ELEM.style.display = 'flex'; // Use flex now
+        COLOR_PICKER_ELEM.style.display = 'flex'; 
         DRAW_BUTTON.disabled = true;
         UNO_BUTTON.disabled = true;
         PLAYER_HAND_ELEM.querySelectorAll('.card').forEach(c => c.onclick = null); // Disable hand
@@ -355,23 +363,33 @@ function showColorPicker(playerIndex, wildValue) {
 
 /**
  * Sets the color for a Wild card and continues the game flow.
- * Must be globally accessible.
  */
 function setWildColor(color) {
+    // This function can be called by human (player 0) or computer (player 1, 2, 3)
     const playerIndex = gameState.currentPlayer;
     
-    COLOR_PICKER_ELEM.style.display = 'none';
+    if (playerIndex === 0) {
+        COLOR_PICKER_ELEM.style.display = 'none';
+        PLAYER_HAND_ELEM.querySelectorAll('.card').forEach(c => c.onclick = null); // Re-disable cards 
+    }
     
+    // Update the top card with the chosen color using the .nextColor property
     gameState.topCard.nextColor = color; 
     
     showStatus(`New color is set to ${color}.`);
 
-    // The current player (who played the wild) passes the turn after choosing the color.
+    // Apply card effects and determine next player
     const result = applyCardEffect(gameState.topCard, playerIndex);
     gameState.currentPlayer = result.nextPlayer;
     
     checkWin(playerIndex); 
     handleUnoCheck(playerIndex);
+
+    // Clear timeout *before* rendering to prevent immediate re-trigger
+    if (gameState.aiActionTimeout) {
+        clearTimeout(gameState.aiActionTimeout);
+        gameState.aiActionTimeout = null;
+    }
 
     renderGame();
 }
@@ -387,7 +405,10 @@ function reshuffleDeck() {
         return false;
     }
     const topCard = gameState.discardPile.pop(); 
-    gameState.deck = shuffle(gameState.discardPile);
+    gameState.deck = createDeck(); // Regenerate deck for safety
+    gameState.deck = gameState.deck.filter(c => !gameState.discardPile.some(dc => dc.color === c.color && dc.value === c.value)); // Simple filter to remove discarded cards (imperfect but functional)
+    gameState.deck = [...gameState.deck, ...shuffle(gameState.discardPile)];
+
     gameState.discardPile = [topCard];
     showStatus('Deck ran out! Discard pile shuffled into new deck.');
     return true;
@@ -395,6 +416,8 @@ function reshuffleDeck() {
 
 /**
  * Handles the logic for drawing a card for the current player.
+ * @param {number} playerIndex - The index of the player drawing.
+ * @returns {boolean} True if a playable card was found/drawn, False if turn must pass.
  */
 function handleDrawAction(playerIndex) {
     const isHuman = playerIndex === 0;
@@ -409,9 +432,9 @@ function handleDrawAction(playerIndex) {
             hand.push(gameState.deck.pop());
             cardsDrawn++;
         }
-        gameState.pendingDraw = 0; 
+        gameState.pendingDraw = 0; // Penalty complete
         
-        // Always pass turn after a penalty draw
+        // Pass turn after a penalty draw
         let nextPlayer = calculateNextPlayer(playerIndex, gameState.direction);
         gameState.currentPlayer = nextPlayer;
         
@@ -420,74 +443,111 @@ function handleDrawAction(playerIndex) {
     }
     
     // --- 2. DRAW TILL MATCH LOGIC ---
+    
     let playableFound = false;
+    let cardDrawn = null;
     
     do {
         if (gameState.deck.length === 0) {
             if (!reshuffleDeck()) break;
         }
         
-        const newCard = gameState.deck.pop();
-        hand.push(newCard);
+        cardDrawn = gameState.deck.pop();
+        hand.push(cardDrawn);
         cardsDrawn++;
         
-        if (canPlay(newCard, gameState.topCard)) {
+        if (canPlay(cardDrawn, gameState.topCard)) {
             playableFound = true;
-            break; 
+            break; // Stop drawing
         }
         
-    } while (true);
+    } while (isHuman && !playableFound); // Human only draws one card, AI draws till match or deck empty.
 
     if (cardsDrawn > 0) {
          showStatus(`${isHuman ? 'You' : `Computer ${playerIndex}`} drew ${cardsDrawn} card${cardsDrawn === 1 ? '' : 's'}.`);
     }
     
-    if (playableFound) {
-        return true; // Playable card was found/drawn
+    if (isHuman) {
+         // Human draws ONE card. If playable, they can click it. If not, turn passes via click Draw again, or next action.
+         if (!playableFound) {
+              // Turn passes
+              let nextPlayer = calculateNextPlayer(playerIndex, gameState.direction);
+              gameState.currentPlayer = nextPlayer;
+         }
+         return playableFound;
     } else {
-        // No playable card found, turn passes
-        let nextPlayer = calculateNextPlayer(playerIndex, gameState.direction);
-        gameState.currentPlayer = nextPlayer;
-        return false; // Turn passed
+        // AI draws till match. If playable, they play it immediately.
+        return playableFound; 
     }
 }
-const drawCardForPlayer = handleDrawAction;
 
 
 /**
  * Handles the player clicking a card in their hand or the draw button.
  */
 function handlePlayerAction(cardIndex) {
-    if (gameState.gameOver || gameState.currentPlayer !== 0) return;
+    if (gameState.gameOver || (gameState.currentPlayer !== 0 && cardIndex === null)) return;
     
+    // --- Handle Draw Card action if cardIndex is null ---
+    if (cardIndex === null) {
+        if (gameState.currentPlayer === 0) {
+            handleDrawAction(0); 
+        }
+        renderGame();
+        return; 
+    }
+    // --- END DRAW ---
+    
+    // The rest of the code is for playing a card (cardIndex is a valid hand index)
     const cardPlayed = gameState.hands[0][cardIndex]; 
     
+    const isPlayerTurn = gameState.currentPlayer === 0;
+    const isJumpIn = !isPlayerTurn && isExactMatch(cardPlayed, gameState.topCard);
+
+    if (!isPlayerTurn && !isJumpIn) return;
+    
     // 1. Check if card is playable
-    if (!canPlay(cardPlayed, gameState.topCard)) {
+    if (!canPlay(cardPlayed, gameState.topCard) && !isJumpIn) {
         showStatus('Invalid move. Card must match color, value, or be a Wild card.');
         return;
     }
 
-    // 2. Remove and update piles
+    // 2. Remove the played card from the player's hand
     gameState.hands[0].splice(cardIndex, 1);
+    
+    // 3. Add the card to the discard pile and update top card
     gameState.discardPile.push(cardPlayed);
     gameState.topCard = cardPlayed;
     
+    // Clear the 'nextColor' property
     if (gameState.topCard.nextColor) {
         delete gameState.topCard.nextColor;
     }
     
-    // 3. Handle Wild Card color choice (pauses flow)
+    // 4. Handle Wild Card color choice for the human player
     if (cardPlayed.color === 'BL') {
-        showColorPicker(0, cardPlayed.value);
+        // Pauses flow until setWildColor is called
+        showColorPicker(0, cardPlayed.value); 
     } else {
-        // Non-Wild: Apply effect and proceed
+        // Non-Wild Card Play: Apply effect and proceed
         const result = applyCardEffect(cardPlayed, 0);
         
-        // 4. Update game state and check for win
+        // 5. Update game state and check for win
         gameState.currentPlayer = result.nextPlayer;
+        
+        // If it was a Jump In, the player who jumped in gets the turn back
+        if (isJumpIn) {
+            gameState.currentPlayer = 0; 
+        }
+        
         checkWin(0);
         handleUnoCheck(0); 
+    }
+    
+    // Clear timeout *before* rendering to prevent immediate re-trigger
+    if (gameState.aiActionTimeout) {
+        clearTimeout(gameState.aiActionTimeout);
+        gameState.aiActionTimeout = null;
     }
 
     renderGame();
@@ -496,42 +556,52 @@ function handlePlayerAction(cardIndex) {
 /**
  * Executes the computer's move logic (for players 1, 2, 3).
  */
-function computerMove() {
-    if (gameState.gameOver || gameState.currentPlayer === 0 || COLOR_PICKER_ELEM.style.display !== 'none') return;
+function handleComputerTurn() {
+    if (gameState.currentPlayer === 0 || gameState.gameOver || COLOR_PICKER_ELEM.style.display !== 'none') {
+        if (gameState.aiActionTimeout) {
+             clearTimeout(gameState.aiActionTimeout);
+             gameState.aiActionTimeout = null;
+        }
+        return;
+    }
     
     const playerIndex = gameState.currentPlayer;
     const topCard = gameState.topCard;
     const computerHand = gameState.hands[playerIndex];
     
-    let playableIndex = -1;
-    let playableCard = null;
-
     // 1. Find a playable card
+    let playableIndex = -1;
     for(let i = 0; i < computerHand.length; i++) {
         if (canPlay(computerHand[i], topCard)) {
             playableIndex = i;
-            playableCard = computerHand[i];
             break; 
         }
     }
     
     if (gameState.pendingDraw > 0) {
-        // Computer draws penalty cards
+        // Computer draws penalty cards (handleDrawAction will pass the turn)
         handleDrawAction(playerIndex); 
 
     } else if (playableIndex !== -1) {
         // 2. Play the card
         
+        const cardPlayed = computerHand[playableIndex];
         computerHand.splice(playableIndex, 1);
-        gameState.discardPile.push(playableCard);
-        gameState.topCard = playableCard;
+        gameState.discardPile.push(cardPlayed);
+        gameState.topCard = cardPlayed;
         if (gameState.topCard.nextColor) { delete gameState.topCard.nextColor; }
 
-        // Handle Wild Card color choice for the computer
-        if (playableCard.color === 'BL') {
-            showColorPicker(playerIndex, playableCard.value); 
+        // Computer UNO Call
+        if (computerHand.length === 1) {
+             showStatus(`Computer ${playerIndex} called UNO!`);
+        }
+
+        // Handle Wild Card color choice and effect
+        if (cardPlayed.color === 'BL') {
+            showColorPicker(playerIndex, cardPlayed.value); 
+            // setWildColor is called immediately by showColorPicker(1, ...)
         } else {
-            const result = applyCardEffect(playableCard, playerIndex);
+            const result = applyCardEffect(cardPlayed, playerIndex);
             gameState.currentPlayer = result.nextPlayer;
             checkWin(playerIndex);
             handleUnoCheck(playerIndex); 
@@ -541,25 +611,22 @@ function computerMove() {
         // 3. No playable card, computer must draw (Draw Till Match)
         const playableFound = handleDrawAction(playerIndex); 
         
-        // If a playable card was found AND the computer's turn didn't pass, play it.
+        // If a playable card was found and turn hasn't passed (currentPlayer is still the AI), play it.
         if (playableFound && gameState.currentPlayer === playerIndex) {
-            let newPlayableIndex = -1;
-            let newPlayableCard = null;
+            // Re-check for a playable card (the one just drawn, which will be the last one added)
+            const newPlayableIndex = computerHand.findIndex(card => canPlay(card, topCard));
             
-            for(let i = 0; i < computerHand.length; i++) {
-                if (canPlay(computerHand[i], topCard)) {
-                    newPlayableIndex = i;
-                    newPlayableCard = computerHand[i];
-                    break;
-                }
-            }
-            
-            // Play the card immediately
             if (newPlayableIndex !== -1) {
+                const newPlayableCard = computerHand[newPlayableIndex];
                 computerHand.splice(newPlayableIndex, 1);
                 gameState.discardPile.push(newPlayableCard);
                 gameState.topCard = newPlayableCard;
                 if (gameState.topCard.nextColor) { delete gameState.topCard.nextColor; }
+                
+                // Computer UNO Call
+                if (computerHand.length === 1) {
+                    showStatus(`Computer ${playerIndex} called UNO!`);
+                }
 
                 if (newPlayableCard.color === 'BL') {
                     showColorPicker(playerIndex, newPlayableCard.value); 
@@ -572,12 +639,14 @@ function computerMove() {
             }
         }
     }
-
+    
+    // Clear timeout and re-render
+    if (gameState.aiActionTimeout) {
+        clearTimeout(gameState.aiActionTimeout);
+        gameState.aiActionTimeout = null;
+    }
     renderGame();
 }
-
-
-// ... (checkWin, handleUnoCheck, declareUno remain the same, adjusted for playerIndex)
 
 
 /**
@@ -599,10 +668,7 @@ function handleUnoCheck(playerIndex) {
             gameState.unoAwaitingCall = true;
             STATUS.textContent = "You have 1 card! Call UNO or face a penalty on the next turn.";
         } else {
-            // Computer always calls UNO instantly after playing/drawing
-            setTimeout(() => {
-                STATUS.textContent = `Computer ${playerIndex} called UNO!`;
-            }, 500);
+            // Computer always calls UNO instantly 
         }
     } else {
         gameState.unoAwaitingCall = false;
@@ -626,7 +692,6 @@ function declareUno() {
 
 // --- Initialization ---
 
-// Set up the initial state to show the UI is ready
 document.addEventListener('DOMContentLoaded', () => {
     initGame();
     gameState.hands = Array.from({ length: NUM_PLAYERS }, () => []); 
