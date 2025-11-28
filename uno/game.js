@@ -296,9 +296,16 @@ function renderCard(card, isClickable = false, index = -1) {
         const isPlayerTurn = gameState.currentPlayer === 0;
         
         // A card is 'playable' if it's a valid play on their turn OR an exact match for a Jump In
-        const isValid = (isPlayerTurn && isValidPlay(card, topCard)) || (!isPlayerTurn && isExactMatch(card, topCard));
+        // Note: For Jump In, we must ensure the top card color is not 'BL' (Wild) 
+        // as the wild card has no printed color.
+        const canJumpIn = gameState.currentPlayer === 1 && 
+                          gameState.topCard.color !== 'BL' && 
+                          isExactMatch(card, topCard);
+                          
+        const isValid = (isPlayerTurn && isValidPlay(card, topCard)) || canJumpIn;
         
         if (isValid) {
+            cardElem.classList.remove('disabled');
             // Note: We use an anonymous function wrapper to call handlePlayerAction
             cardElem.onclick = () => handlePlayerAction(index);
         } else {
@@ -421,14 +428,21 @@ function handlePlayerAction(cardIndex) {
     // Handle Wild Card Color Choice
     if (cardPlayed.color === 'BL') {
         // Update topCard with the Wild card, but wait for color choice
+        // Crucial Fix: Set the top card here so the color picker can update its text properly
         gameState.topCard = cardPlayed; 
-        // We set the current player to 0 (the jumper) to ensure color picker resolves correctly
+        
+        // We set the current player to 0 (the player who played the wild) to ensure color picker resolves correctly
         gameState.currentPlayer = 0; 
+        
+        // Render the game once *before* showing the picker to hide the cards and show the top card correctly
+        // This is where the hand disappearing was caused: it was rendered empty/disabled, but needed to be re-rendered later.
+        renderGame(); 
         showColorPicker(0, cardPlayed.value);
     } else {
         // Non-Wild Card Play: Apply effect and proceed
         const result = applyCardEffect(cardPlayed, 0, gameState.deck, gameState.hands);
         gameState.topCard = result.newTopCard;
+        
         checkWinCondition(0);
         
         if (!gameState.gameOver) {
@@ -460,7 +474,6 @@ function handlePlayerAction(cardIndex) {
 function showColorPicker(playerIndex, wildValue) {
     if (playerIndex === 0) {
         // Disable everything while waiting for color choice
-        PLAYER_HAND_ELEM.innerHTML = ''; 
         DRAW_BUTTON.disabled = true;
         UNO_BUTTON.disabled = true;
         COLOR_PICKER_ELEM.style.display = 'flex';
@@ -490,14 +503,21 @@ function chooseColor(chosenColor, wildValue) {
     gameState.topCard = { color: chosenColor, value: wildValue };
 
     // Apply card effects and determine next player
+    // The player who played the card is always 0 here, as the computer chooses color within applyCardEffect
     const result = applyCardEffect(gameState.topCard, 0, gameState.deck, gameState.hands);
     
     checkWinCondition(0);
     if (!gameState.gameOver) {
+        // Fix: Update current player using the result of applyCardEffect
         gameState.currentPlayer = result.nextPlayer;
-        renderGame();
+        
+        // Crucial Fix: Re-render the game to show the player's hand (which was cleared)
+        // and to update the top card color.
+        renderGame(); 
+        
         if (gameState.currentPlayer !== 0) {
-            setTimeout(handleComputerTurn, 1000);
+            // Fix: Start the computer's turn using the wrapper function handleComputerTurn
+            gameState.unoPenaltyCheckTimeout = setTimeout(handleComputerTurn, 1000);
         }
     }
 }
@@ -527,6 +547,7 @@ function drawCard() {
         gameState.unoAwaitingCall = false; // Player's turn is officially over, clear flag
         gameState.mustDraw = false;
         gameState.currentPlayer = 1;
+        
         renderGame();
         // Use the wrapper function to allow for penalty check logic
         gameState.unoPenaltyCheckTimeout = setTimeout(handleComputerTurn, 1000); 
@@ -585,15 +606,16 @@ function handleComputerTurnLogic() {
              STATUS.textContent = "Computer calls UNO!";
         }
 
+        let result;
         // Handle Wild Card logic for Computer
         if (cardPlayed.color === 'BL') {
             // applyCardEffect will determine the color based on computer's best move
-            const result = applyCardEffect(cardPlayed, 1, gameState.deck, gameState.hands);
+            result = applyCardEffect(cardPlayed, 1, gameState.deck, gameState.hands);
             gameState.topCard = result.newTopCard; 
             
         } else {
             // Non-Wild Card Play: Apply effect and proceed
-            const result = applyCardEffect(cardPlayed, 1, gameState.deck, gameState.hands);
+            result = applyCardEffect(cardPlayed, 1, gameState.deck, gameState.hands);
             gameState.topCard = result.newTopCard;
         }
         
@@ -682,8 +704,6 @@ function declareUno() {
         if (gameState.unoPenaltyCheckTimeout) {
             clearTimeout(gameState.unoPenaltyCheckTimeout);
             gameState.unoPenaltyCheckTimeout = null;
-            // Note: If player calls UNO before the computer's turn starts, 
-            // the computer won't call a penalty, and its turn will start immediately after the current action.
         }
     } else if (gameState.hands[0].length === 0) {
         STATUS.textContent = "You already won!";
