@@ -1,183 +1,23 @@
-/* ========================================================== */
-/* --- 1. GLOBAL & LAYOUT STYLES --- */
-/* ========================================================== */
+/* Add this to style.css for 4-player layout */
 
-/* Define UNO Colors using CSS Variables for easy maintenance */
-:root {
-    /* Using the exact hex codes from your provided CSS snippet */
-    --color-R: #D72600; /* Red */
-    --color-G: #379711; /* Green */
-    --color-B: #0956BF; /* Blue */
-    --color-Y: #ECD407; /* Yellow */
-    --color-BL: #111111; /* Black (Wild/Draw Four) */
-    --color-BG: #f4f4f4; /* Light Grey Background */
-    --color-Text: #333;
-}
-
-body {
-    font-family: Arial, sans-serif;
-    background-color: var(--color-BG);
-    color: var(--color-Text);
-    text-align: center;
-    margin: 0;
-    padding: 0;
-}
-
-#game-container {
-    max-width: 800px;
-    margin: 20px auto;
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
-
-/* -------------------------------------- */
-/* --- 2. CORE CARD VISUAL STYLES --- */
-/* -------------------------------------- */
-.card {
-    display: flex; 
-    justify-content: center;
-    align-items: center;
-    width: 70px; 
-    height: 100px; 
-    margin: 5px;
-    border-radius: 10px; 
-    font-size: 1.5em;
-    font-weight: bold;
-    cursor: pointer;
-    box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.3);
-    border: 3px solid transparent; 
-    transition: transform 0.1s;
-    user-select: none;
-    line-height: 1; 
-}
-
-.card:hover:not(.disabled) {
-    transform: translateY(-5px);
-}
-
-.card.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-}
-
-
-/* --- 3. COLORED CARD STYLES --- */
-
-/* Color Classes (Using CSS Variables) */
-.card.R, .color-btn.R { background-color: var(--color-R); color: white; } 
-.card.G, .color-btn.G { background-color: var(--color-G); color: white; } 
-.card.B, .color-btn.B { background-color: var(--color-B); color: white; } 
-.card.Y, .color-btn.Y { background-color: var(--color-Y); color: var(--color-Text); } 
-
-/* Black (Wild) */
-.card.BL { background-color: var(--color-BL); color: white; border: 3px solid #E0E0E0; } 
-
-
-/* --------------------------------------- */
-/* --- 4. TYPE-SPECIFIC STYLING (THE ICON FIX) --- */
-/* --------------------------------------- */
-
-/* Number Cards (0-9) */
-.card:not(.BL):not([data-value="S"]):not([data-value="R"]):not([data-value="D2"]) {
-    font-size: 40px;
-}
-
-/* Draw Two (+2) */
-.card[data-value="D2"], .card.BL[data-value="W4"] {
-    font-size: 36px;
-}
-
-/* --- ICON FIX: Increase font size for symbols (🚫 and ⟲) --- */
-.card[data-value="S"],
-.card[data-value="R"] {
-    font-size: 40px; 
-    line-height: 100px; 
-}
-
-
-/* Wild Cards */
-
-/* Standard WILD Card (W) - Quad-Color Background */
-.card.BL[data-value="W"] {
-    color: black; 
-    font-size: 20px;
-    font-weight: 900;
-    
-    /* QUADRANT EFFECT using the CSS Variables */
-    background: conic-gradient(
-        var(--color-R) 0deg 90deg,
-        var(--color-Y) 90deg 180deg,
-        var(--color-B) 180deg 270deg,
-        var(--color-G) 270deg 360deg
-    );
-    /* Subtle white outline to make text readable */
-    text-shadow: 1px 1px 0 #FFFFFF, -1px -1px 0 #FFFFFF, 
-                 1px -1px 0 #FFFFFF, -1px 1px 0 #FFFFFF;
-}
-
-/* -------------------------------------- */
-/* --- 5. WILD CARD BORDER DYNAMIC STYLING --- */
-/* -------------------------------------- */
-
-/* This class is used by game.js to trigger the dynamic border color set inline via JS */
-.card.BL.has-next-color {
-    /* Set a thick, noticeable border style */
-    border-width: 5px; 
-    border-style: solid;
-    /* The border color is set dynamically by the JavaScript using TOP_CARD_ELEM.style.borderColor */
-}
-
-
-/* -------------------------------------- */
-/* --- 6. Layout and Button Styles --- */
-/* -------------------------------------- */
-
-#discard-area {
-    margin: 20px 0;
-    min-height: 120px; 
-}
-
-/* Player Hand Layout */
-#player-hand-container {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    min-height: 100px;
-}
-
-/* Action Buttons */
-#draw-button, #start-button, .color-btn, #uno-button {
-    padding: 10px 15px;
-    margin: 10px 5px; 
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: background-color 0.1s;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    color: white; /* Default button text color */
-}
-
-#draw-button {
-    background-color: #555;
-}
-
-#start-button {
-    background-color: #007BFF;
-}
-
-#uno-button {
-    background-color: #FF5733; 
-}
-
-#color-picker {
-    border: 1px solid #ccc;
-    padding: 10px;
+#opponent-area {
     margin-bottom: 10px;
+    padding: 10px;
+    border: 1px dashed #ccc;
     border-radius: 5px;
-    display: flex; 
-    justify-content: center;
+}
+
+#opponent-area h3 {
+    margin-top: 0;
+}
+
+.opponent-hands-container {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    text-align: center;
+}
+
+.opponent-hands-container .hand-size {
+    font-size: 1.2em;
 }
