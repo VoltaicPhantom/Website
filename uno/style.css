@@ -14,21 +14,25 @@ body {
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
-/* --- Card Styles --- */
+/* -------------------------------------- */
+/* --- CORE CARD VISUAL STYLES (UPDATED) --- */
+/* -------------------------------------- */
 .card {
-    display: inline-flex;
+    display: flex; /* Changed from inline-flex for better alignment */
     justify-content: center;
     align-items: center;
-    width: 60px;
-    height: 90px;
+    width: 70px; /* Increased size for symbols/text */
+    height: 100px; /* Increased size for symbols/text */
     margin: 5px;
-    border-radius: 8px;
+    border-radius: 10px; /* Slightly more rounded */
     font-size: 1.5em;
     font-weight: bold;
     cursor: pointer;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+    box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.3);
     border: 3px solid transparent;
     transition: transform 0.1s;
+    user-select: none;
+    line-height: 1; /* Helps with vertical alignment of symbols */
 }
 
 .card:hover {
@@ -41,14 +45,75 @@ body {
     transform: none;
 }
 
-/* Color Classes */
+/* Color Classes (Existing) */
 .card.R, .color-btn.R { background-color: #D72600; color: white; } /* Red */
 .card.G, .color-btn.G { background-color: #379711; color: #333; }
-.card.B, .color-btn.B { background-color: #0956BF; color: #333; } /* Slightly brighter blue */
+.card.B, .color-btn.B { background-color: #0956BF; color: #333; }
 .card.Y, .color-btn.Y { background-color: #ECD407; color: #333; }
-.card.BL { background-color: #111111; color: white; } /* Black (Wild) */
+.card.BL { background-color: #111111; color: white; border: 3px solid #E0E0E0; } /* Black (Wild) - Added border */
 
-/* Special Card Styling for Top Card */
+/* --------------------------------------- */
+/* --- TYPE-SPECIFIC STYLING (NEW) --- */
+/* --------------------------------------- */
+
+/* 1. Number Cards (0-9) - Use large number font */
+.card:not(.BL):not([data-value="S"]):not([data-value="R"]):not([data-value="D2"]) {
+    font-size: 40px;
+}
+
+/* 2. Colored Action Cards */
+
+/* Draw Two (+2) */
+.card[data-value="D2"] {
+    font-size: 36px;
+}
+
+/* Skip (🚫) */
+.card[data-value="S"] {
+    font-size: 40px; 
+    /* Ensure the Unicode symbol is centered */
+    line-height: 100px; 
+}
+
+/* Reverse (REVERSE) */
+.card[data-value="R"] {
+    font-size: 18px; 
+    letter-spacing: 1px;
+    padding: 0 5px;
+    line-height: normal;
+}
+
+/* 3. Wild Cards */
+
+/* Standard WILD Card (W) - Quad-Color Background */
+.card.BL[data-value="W"] {
+    color: black; /* Text should be black for contrast */
+    font-size: 20px;
+    font-weight: 900;
+    
+    /* QUADRANT EFFECT using conic-gradient */
+    background: conic-gradient(
+        #D72600 0deg 90deg,     /* Red */
+        #ECD407 90deg 180deg,    /* Yellow */
+        #0956BF 180deg 270deg,   /* Blue */
+        #379711 270deg 360deg    /* Green */
+    );
+    /* Subtle white outline to make text readable */
+    text-shadow: 1px 1px 0 #FFFFFF, -1px -1px 0 #FFFFFF, 
+                 1px -1px 0 #FFFFFF, -1px 1px 0 #FFFFFF;
+}
+
+/* Wild Draw Four (+4) */
+.card.BL[data-value="W4"] {
+    background-color: #111111;
+    color: white;
+    font-size: 36px;
+}
+
+/* -------------------------------------- */
+/* --- Layout and Button Styles (Existing) --- */
+/* -------------------------------------- */
+
 #discard-area {
     margin: 20px 0;
     min-height: 120px; /* Space for the top card */
@@ -63,17 +128,23 @@ body {
 }
 
 /* Action Buttons */
-#draw-button, #start-button, .color-btn {
+#draw-button, #start-button, .color-btn, #uno-button {
     padding: 10px 15px;
-    margin: 10px;
+    margin: 10px 5px; /* Adjusted margins slightly */
     border: none;
     border-radius: 5px;
     cursor: pointer;
     font-weight: bold;
+    transition: background-color 0.1s;
 }
 
 #start-button {
     background-color: #007BFF;
+    color: white;
+}
+
+#uno-button {
+    background-color: #FF5733; /* Distinct color for UNO button */
     color: white;
 }
 
@@ -82,4 +153,6 @@ body {
     padding: 10px;
     margin-bottom: 10px;
     border-radius: 5px;
+    display: flex; /* Ensure color buttons line up */
+    justify-content: center;
 }
