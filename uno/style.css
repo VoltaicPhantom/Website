@@ -5,8 +5,16 @@ body {
     text-align: center;
 }
 
+/* --- ESSENTIAL COLOR VARIABLES --- */
+:root {
+    --color-R: #D72600; /* Red */
+    --color-G: #379711; /* Green */
+    --color-B: #0956BF; /* Blue */
+    --color-Y: #ECD407; /* Yellow */
+}
+
 #game-container {
-    max-width: 800px;
+    max-width: 900px;
     margin: 20px auto;
     background-color: #fff;
     padding: 20px;
@@ -15,7 +23,7 @@ body {
 }
 
 /* -------------------------------------- */
-/* --- 4-PLAYER LAYOUT FIXES (NEW) --- */
+/* --- 4-PLAYER LAYOUT FIXES --- */
 /* -------------------------------------- */
 
 #opponent-area {
@@ -25,22 +33,25 @@ body {
     border-radius: 5px;
 }
 
-#opponent-area h3 {
-    margin-top: 0;
-    margin-bottom: 10px;
-}
-
-/* Container for the 3 computer hand displays */
 .opponent-hands-container {
     display: flex;
     justify-content: space-around;
-    align-items: flex-start; /* Align contents to the top */
+    align-items: flex-start;
     text-align: center;
 }
 
 .opponent-hands-container > div {
     flex-grow: 1;
     margin: 0 5px;
+    border: 2px solid transparent;
+    padding: 5px 0;
+}
+
+/* Highlight for current player */
+.opponent-hands-container > div.is-current-player {
+    border-color: #FF5733;
+    background-color: #fff0f0;
+    border-radius: 5px;
 }
 
 .opponent-hands-container p {
@@ -53,7 +64,7 @@ body {
     font-size: 1.2em;
     font-weight: bold;
     color: #007BFF;
-    min-height: 20px; /* Ensure space for the number */
+    min-height: 20px;
 }
 
 
@@ -88,57 +99,46 @@ body {
     transform: none;
 }
 
-/* * Color Classes */
-.card.R, .color-btn.R { background-color: #D72600; color: white; } 
-.card.G, .color-btn.G { background-color: #379711; color: white; } 
-.card.B, .color-btn.B { background-color: #0956BF; color: white; } 
-.card.Y, .color-btn.Y { background-color: #ECD407; color: #333; } 
+/* * Color Classes (Now using variables defined in :root) */
+.card.R, .color-btn.R { background-color: var(--color-R); color: white; } 
+.card.G, .color-btn.G { background-color: var(--color-G); color: white; } 
+.card.B, .color-btn.B { background-color: var(--color-B); color: white; } 
+.card.Y, .color-btn.Y { background-color: var(--color-Y); color: #333; } 
 .card.BL { background-color: #111111; color: white; border: 3px solid #E0E0E0; } 
 
-/* Wild Card Active Color Border */
+/* Wild Card Active Color Border (Set by JS, relies on variables) */
 .card.has-next-color {
-    /* Use CSS variables for the color border if available */
     border-width: 4px;
 }
 
 /* --------------------------------------- */
-/* --- TYPE-SPECIFIC STYLING --- */
+/* --- TYPE-SPECIFIC STYLING (Symbols) --- */
 /* --------------------------------------- */
 
-/* 1. Number Cards (0-9) */
+/* Number Cards (0-9) */
 .card:not(.BL):not([data-value="S"]):not([data-value="R"]):not([data-value="D2"]) {
     font-size: 40px;
 }
 
-/* 2. Colored Action Cards */
-.card[data-value="D2"] { font-size: 36px; }
-.card[data-value="S"] { font-size: 40px; line-height: 100px; }
-.card[data-value="R"] { font-size: 18px; letter-spacing: 1px; padding: 0 5px; line-height: normal; }
+/* Action Card Symbols */
+.card[data-value="D2"] { font-size: 36px; } /* +2 */
+.card[data-value="S"] { font-size: 40px; } /* 🚫 */
+.card[data-value="R"] { font-size: 40px; } /* ⟲ */
 
-/* 3. Wild Cards */
+/* Wild Cards (W/W4) */
 .card.BL[data-value="W"] {
     color: black; 
     font-size: 20px;
     font-weight: 900;
-    background: conic-gradient(
-        #D72600 0deg 90deg,     
-        #ECD407 90deg 180deg,    
-        #0956BF 180deg 270deg,   
-        #379711 270deg 360deg    
-    );
-    text-shadow: 1px 1px 0 #FFFFFF, -1px -1px 0 #FFFFFF, 
-                 1px -1px 0 #FFFFFF, -1px 1px 0 #FFFFFF;
+    background: conic-gradient(var(--color-R) 0deg 90deg, var(--color-Y) 90deg 180deg, var(--color-B) 180deg 270deg, var(--color-G) 270deg 360deg);
+    text-shadow: 1px 1px 0 #FFFFFF, -1px -1px 0 #FFFFFF, 1px -1px 0 #FFFFFF, -1px 1px 0 #FFFFFF;
 }
 
 .card.BL[data-value="W4"] {
     background-color: #111111;
     color: white;
-    font-size: 36px;
+    font-size: 36px; /* +4 */
 }
-
-/* -------------------------------------- */
-/* --- Layout and Button Styles --- */
-/* -------------------------------------- */
 
 #discard-area {
     margin: 20px 0;
@@ -173,11 +173,4 @@ body {
     display: flex; 
     justify-content: center;
     gap: 10px;
-}
-
-/* Ensure the buttons within the color picker are visible and clickable */
-#color-picker .color-btn {
-    width: 60px;
-    height: 30px;
-    padding: 0;
 }
