@@ -42,11 +42,11 @@ body {
 }
 
 /* Color Classes */
-.card.R, .color-btn.R { background-color: #FF0000; color: white; } /* Red */
-.card.G, .color-btn.G { background-color: #00AA00; color: white; } /* Green */
-.card.B, .color-btn.B { background-color: #0000FF; color: white; } /* Blue */
-.card.Y, .color-btn.Y { background-color: #CCCC00; color: white; } /* Yellow */
-.card.BL { background-color: #333; color: white; } /* Black (Wild) */
+.card.R, .color-btn.R { background-color: #EE3322; color: white; } /* Red */
+.card.G, .color-btn.G { background-color: #22AA55; color: white; } /* Green */
+.card.B, .color-btn.B { background-color: #0077CC; color: white; } /* Blue */
+.card.Y, .color-btn.Y { background-color: #FFFF00; color: white; } /* Yellow */
+.card.BL { background-color: #111111; color: white; } /* Black (Wild) */
 
 /* Special Card Styling for Top Card */
 #discard-area {
