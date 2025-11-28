@@ -230,7 +230,7 @@ function computerPlay(computerHand, topCard) {
         }
     }
             
-    return null; // Indicate drawing (will trigger Draw Till Match in handleComputerTurn)
+    return null; // Indicate drawing (will trigger Draw Till Match in handleComputerTurnLogic)
 }
 
 /**
@@ -245,6 +245,8 @@ function initGame() {
     gameState.currentPlayer = 0; // 0: Human, 1: Computer
     gameState.gameOver = false;
     gameState.mustDraw = false; // Flag for when a player must draw but hasn't yet
+    gameState.unoAwaitingCall = false; // Tracks if the previous player (human) needs to call UNO
+    gameState.unoPenaltyCheckTimeout = null; // Used to delay computer's turn for penalty/jump-in window
 }
 
 
@@ -289,9 +291,12 @@ function renderCard(card, isClickable = false, index = -1) {
     cardElem.textContent = getCardDisplayText(card.value);
     
     if (isClickable) {
-        // If the card is clickable, check if it's a valid play
+        // If the card is clickable, check if it's a valid play or a Jump In
         const topCard = gameState.topCard;
-        const isValid = isValidPlay(card, topCard);
+        const isPlayerTurn = gameState.currentPlayer === 0;
+        
+        // A card is 'playable' if it's a valid play on their turn OR an exact match for a Jump In
+        const isValid = (isPlayerTurn && isValidPlay(card, topCard)) || (!isPlayerTurn && isExactMatch(card, topCard));
         
         if (isValid) {
             // Note: We use an anonymous function wrapper to call handlePlayerAction
@@ -326,7 +331,7 @@ function renderGame() {
 
     // 1. Update Status Message
     if (gameState.currentPlayer === 0) {
-        STATUS.textContent = 'Your turn!';
+        STATUS.textContent = gameState.unoAwaitingCall ? 'YOUR TURN! CALL UNO!' : 'Your turn!';
     } else {
         STATUS.textContent = "Computer's turn...";
     }
@@ -342,7 +347,8 @@ function renderGame() {
     // 4. Update Player Hand
     PLAYER_HAND_ELEM.innerHTML = '';
     gameState.hands[0].forEach((card, index) => {
-        const isClickable = gameState.currentPlayer === 0;
+        // Hand cards are always clickable if the game is active, to allow for Jump In
+        const isClickable = !gameState.gameOver; 
         const cardElem = renderCard(card, isClickable, index);
         PLAYER_HAND_ELEM.appendChild(cardElem);
     });
@@ -350,8 +356,8 @@ function renderGame() {
     // 5. Update Control Buttons
     const isPlayerTurn = gameState.currentPlayer === 0;
     DRAW_BUTTON.disabled = !isPlayerTurn || gameState.mustDraw;
-    // The UNO button is enabled if it's the player's turn and they have exactly 2 cards
-    UNO_BUTTON.disabled = !isPlayerTurn || gameState.hands[0].length !== 2; 
+    // The UNO button is enabled if the game is running and the player has 1 or 2 cards
+    UNO_BUTTON.disabled = gameState.gameOver || gameState.hands[0].length > 2 || gameState.hands[0].length === 0;
 }
 
 /**
@@ -376,34 +382,69 @@ function startGame() {
  * @param {number} cardIndex - The index of the card in the player's hand.
  */
 function handlePlayerAction(cardIndex) {
-    if (gameState.currentPlayer !== 0 || gameState.gameOver) return;
+    if (gameState.gameOver) return;
 
     const cardPlayed = gameState.hands[0][cardIndex];
     
-    if (!isValidPlay(cardPlayed, gameState.topCard)) {
-        STATUS.textContent = 'Invalid card! Try again or Draw.';
-        return;
+    const isPlayerTurn = gameState.currentPlayer === 0;
+    const isJumpIn = gameState.currentPlayer === 1 && isExactMatch(cardPlayed, gameState.topCard);
+    
+    if (!isPlayerTurn && !isJumpIn) return; // Not your turn and not a valid Jump In
+
+    // If a Jump In or standard play occurs, clear any pending computer move check
+    if (gameState.unoPenaltyCheckTimeout) {
+        clearTimeout(gameState.unoPenaltyCheckTimeout);
+        gameState.unoPenaltyCheckTimeout = null;
+    }
+
+    // --- Validation and Preparation ---
+    if (isPlayerTurn) {
+        if (!isValidPlay(cardPlayed, gameState.topCard)) {
+            STATUS.textContent = 'Invalid card! Try again or Draw.';
+            return;
+        }
+        gameState.unoAwaitingCall = false; // Player is playing a regular turn, clears the penalty flag if set
+    } else if (isJumpIn) {
+        STATUS.textContent = 'JUMP IN! You seized the turn!';
     }
     
     // Remove card from hand and add to discard pile
     gameState.hands[0].splice(cardIndex, 1);
     gameState.discardPile.push(cardPlayed);
 
+    // Handle UNO call anticipation for Human player
+    const handSizeAfterPlay = gameState.hands[0].length;
+    if (handSizeAfterPlay === 1) {
+        gameState.unoAwaitingCall = true;
+    }
+
     // Handle Wild Card Color Choice
     if (cardPlayed.color === 'BL') {
         // Update topCard with the Wild card, but wait for color choice
         gameState.topCard = cardPlayed; 
+        // We set the current player to 0 (the jumper) to ensure color picker resolves correctly
+        gameState.currentPlayer = 0; 
         showColorPicker(0, cardPlayed.value);
     } else {
         // Non-Wild Card Play: Apply effect and proceed
         const result = applyCardEffect(cardPlayed, 0, gameState.deck, gameState.hands);
         gameState.topCard = result.newTopCard;
         checkWinCondition(0);
+        
         if (!gameState.gameOver) {
+            // Determine next player
             gameState.currentPlayer = result.nextPlayer;
+            
+            // If it was a Jump In, the player who jumped in gets the turn back
+            if (isJumpIn) {
+                gameState.currentPlayer = 0; 
+            }
+            
             renderGame();
+            
             if (gameState.currentPlayer !== 0) {
-                setTimeout(handleComputerTurn, 1000); // Computer turn after 1 second delay
+                // If the turn passed to the computer, start a timeout that checks for penalty first
+                gameState.unoPenaltyCheckTimeout = setTimeout(handleComputerTurn, 1000); 
             }
         }
     }
@@ -483,18 +524,48 @@ function drawCard() {
         gameState.mustDraw = false; 
     } else {
         // If the drawn card is not playable, the turn passes to the computer
+        gameState.unoAwaitingCall = false; // Player's turn is officially over, clear flag
         gameState.mustDraw = false;
         gameState.currentPlayer = 1;
         renderGame();
-        setTimeout(handleComputerTurn, 1000);
+        // Use the wrapper function to allow for penalty check logic
+        gameState.unoPenaltyCheckTimeout = setTimeout(handleComputerTurn, 1000); 
     }
     renderGame();
 }
 
 /**
- * Handles the computer's turn logic.
+ * Wrapper function for the computer's turn logic, which first checks for a human UNO penalty.
  */
 function handleComputerTurn() {
+    if (gameState.currentPlayer !== 1 || gameState.gameOver) return;
+    
+    // --- UNO Penalty Check (Computer catches Human) ---
+    if (gameState.unoAwaitingCall) {
+        STATUS.textContent = "Computer caught you! UNO Penalty: Draw 2 cards.";
+        
+        // 1. Draw 2 cards penalty
+        for (let i = 0; i < 2; i++) {
+             if (gameState.deck.length > 0) gameState.hands[0].push(gameState.deck.pop());
+        }
+        
+        gameState.unoAwaitingCall = false; // Penalty applied, flag cleared
+        
+        // 2. Turn remains with Computer
+        renderGame();
+        // Give a short delay after the penalty is applied before the computer actually plays
+        gameState.unoPenaltyCheckTimeout = setTimeout(handleComputerTurnLogic, 1500);
+        return; 
+    }
+    
+    // If no penalty, proceed directly to computer's play logic
+    handleComputerTurnLogic();
+}
+
+/**
+ * Handles the core logic of the computer's turn (playing or drawing).
+ */
+function handleComputerTurnLogic() {
     if (gameState.currentPlayer !== 1 || gameState.gameOver) return;
 
     STATUS.textContent = "Computer's turn...";
@@ -508,6 +579,11 @@ function handleComputerTurn() {
         const cardPlayed = computerHand[cardIndexToPlay];
         computerHand.splice(cardIndexToPlay, 1);
         gameState.discardPile.push(cardPlayed);
+        
+        // --- Computer UNO Call ---
+        if (computerHand.length === 1) { 
+             STATUS.textContent = "Computer calls UNO!";
+        }
 
         // Handle Wild Card logic for Computer
         if (cardPlayed.color === 'BL') {
@@ -528,7 +604,7 @@ function handleComputerTurn() {
             renderGame();
             if (gameState.currentPlayer === 1) {
                 // Computer skipped the player or reversed to itself
-                setTimeout(handleComputerTurn, 1000); 
+                gameState.unoPenaltyCheckTimeout = setTimeout(handleComputerTurn, 1000); 
             }
         }
         
@@ -536,14 +612,13 @@ function handleComputerTurn() {
         // Draw Card (Draw until match)
         STATUS.textContent = "Computer draws a card...";
         let drawnCard;
-        let drawnCount = 0;
         let canPlay = false;
         let result = {}; // Initialize result for scope
 
         while (gameState.deck.length > 0) {
             drawnCard = gameState.deck.pop();
             computerHand.push(drawnCard);
-            drawnCount++;
+            // Computer must play if possible after drawing
             if (isValidPlay(drawnCard, topCard)) {
                 canPlay = true;
                 break;
@@ -560,17 +635,22 @@ function handleComputerTurn() {
             // Apply effect
             result = applyCardEffect(cardPlayed, 1, gameState.deck, gameState.hands);
             gameState.topCard = result.newTopCard;
+            
+            // --- Computer UNO Call (after playing the drawn card) ---
+            if (computerHand.length === 1) { 
+                 STATUS.textContent = "Computer calls UNO!";
+            }
         }
         
         // If not playable (or deck ran out), turn passes
         checkWinCondition(1);
         if (!gameState.gameOver) {
-            // If the computer played a card (even a drawn one), use the result, otherwise, pass turn
+            // If the computer played a card (even a drawn one), use the result, otherwise, pass turn to human (0)
             gameState.currentPlayer = canPlay ? result.nextPlayer : 0; 
             renderGame();
             if (gameState.currentPlayer === 1) {
                  // Must have played a card that skipped player 0 back to itself
-                 setTimeout(handleComputerTurn, 1000); 
+                 gameState.unoPenaltyCheckTimeout = setTimeout(handleComputerTurn, 1000); 
             }
         }
     }
@@ -596,8 +676,19 @@ function checkWinCondition(playerIndex) {
 function declareUno() {
     if (gameState.hands[0].length === 1) {
         STATUS.textContent = "UNO declared! Good.";
+        gameState.unoAwaitingCall = false; // Successfully called UNO
+        
+        // If the computer was about to play, cancel the penalty check
+        if (gameState.unoPenaltyCheckTimeout) {
+            clearTimeout(gameState.unoPenaltyCheckTimeout);
+            gameState.unoPenaltyCheckTimeout = null;
+            // Note: If player calls UNO before the computer's turn starts, 
+            // the computer won't call a penalty, and its turn will start immediately after the current action.
+        }
+    } else if (gameState.hands[0].length === 0) {
+        STATUS.textContent = "You already won!";
     } else {
-        STATUS.textContent = "Too early to call UNO! Penalty not implemented.";
+        STATUS.textContent = "Too early to call UNO! Penalty not implemented for false call.";
     }
 }
 
