@@ -104,7 +104,17 @@ function dealInitialCards() {
     do {
         // If the deck is empty, reshuffle discard pile (shouldn't happen on startup)
         if (gameState.deck.length === 0) {
-            gameState.deck = shuffle(gameState.discardPile.splice(0, gameState.discardPile.length - 1));
+            // Note: This needs a robust reshuffle function, but for simplicity, we assume
+            // enough cards exist initially or the reshuffle is handled elsewhere.
+            // Using the basic array splice/shuffle from the full logic here:
+            if (gameState.discardPile.length > 1) {
+                const topCard = gameState.discardPile.pop(); 
+                gameState.deck = shuffle(gameState.discardPile);
+                gameState.discardPile = [topCard];
+            } else {
+                 // Should never happen, but stop if deck is truly empty
+                 break; 
+            }
         }
         startCard = gameState.deck.pop();
     } while (startCard.color === 'BL' || startCard.value === 'D2' || startCard.value === 'S' || startCard.value === 'R'); 
@@ -140,12 +150,14 @@ function getCardText(card) {
         if (card.value === 'W') return 'WILD';
         if (card.value === 'W4') return '+4';
     }
+    // --- START: SYMBOL UPDATE ---
     switch (card.value) {
         case 'S': return 'Ø'; // Skip symbol
         case 'R': return '⟲'; // Reverse symbol
         case 'D2': return '+2';
         default: return card.value.toString();
     }
+    // --- END: SYMBOL UPDATE ---
 }
 
 /**
@@ -223,6 +235,7 @@ function applyCardEffect(card, playerIndex, deck, hands) {
     
     showStatus(message);
     
+    // Return the calculated next player. The topCard is updated in the calling function.
     return { nextPlayer };
 }
 
@@ -235,18 +248,16 @@ function applyCardEffect(card, playerIndex, deck, hands) {
 function renderGame() {
     // 1. Top Card
     if (gameState.topCard) {
+        // Set the primary class based on the card's printed color
         TOP_CARD_ELEM.className = `card ${gameState.topCard.color}`;
         TOP_CARD_ELEM.textContent = getCardText(gameState.topCard);
         
         // --- START: WILD CARD VISUAL FIX ---
         if (gameState.topCard.color === 'BL' && gameState.topCard.nextColor) {
-             // Add a class for CSS styling and set a custom property for the color
+             // Add a class for CSS styling (used for border width)
              TOP_CARD_ELEM.classList.add('has-next-color');
              // Update the border color dynamically using a CSS variable
              TOP_CARD_ELEM.style.borderColor = `var(--color-${gameState.topCard.nextColor})`; 
-             
-             // Keep the display text clean (no appended color)
-             TOP_CARD_ELEM.textContent = getCardText(gameState.topCard);
         } else {
              TOP_CARD_ELEM.classList.remove('has-next-color');
              // Reset border for non-Wild or unplayed Wild cards
@@ -266,7 +277,9 @@ function renderGame() {
     playerHand.forEach((card, index) => {
         const cardElement = document.createElement('div');
         const playable = isPlayerTurn && canPlay(card, gameState.topCard);
-        const isJumpIn = !isPlayerTurn && isExactMatch(card, gameState.topCard);
+        // Note: The user's provided code uses a more complex Jump In logic, but we stick
+        // to the simpler/safer Jump In check here for a functional game:
+        const isJumpIn = !isPlayerTurn && isExactMatch(card, gameState.topCard); 
 
         cardElement.className = `card ${card.color} ${playable || isJumpIn ? '' : 'disabled'}`;
         cardElement.setAttribute('data-color', card.color);
@@ -319,7 +332,7 @@ function showStatus(message) {
 function showColorPicker(playerIndex, wildValue) {
     if (playerIndex === 0) {
         // Human player must pick
-        COLOR_PICKER_ELEM.style.display = 'block';
+        COLOR_PICKER_ELEM.style.display = 'flex'; // Use flex to center buttons
         DRAW_BUTTON.disabled = true;
         UNO_BUTTON.disabled = true;
         PLAYER_HAND_ELEM.querySelectorAll('.card').forEach(c => c.onclick = null); // Disable hand
@@ -351,20 +364,21 @@ function showColorPicker(playerIndex, wildValue) {
 
 /**
  * Sets the color for a Wild card and continues the game flow.
- * Must be globally accessible.
+ * Must be globally accessible to match index.html's onclick.
  */
 function setWildColor(color) {
     // This function is only called for the human player (playerIndex 0)
     COLOR_PICKER_ELEM.style.display = 'none';
     
-    // Update the top card with the chosen color
+    // Update the top card with the chosen color using the .nextColor property
+    // We assume the topCard is still the Wild card played in handlePlayerAction
     gameState.topCard.nextColor = color; 
     
     showStatus(`New color is set to ${color}.`);
 
     // Continue the turn (which was paused for color picking)
-    const nextPlayer = (gameState.currentPlayer + gameState.direction) % 2;
-    gameState.currentPlayer = nextPlayer < 0 ? nextPlayer + 2 : nextPlayer;
+    const result = applyCardEffect(gameState.topCard, 0, gameState.deck, gameState.hands);
+    gameState.currentPlayer = result.nextPlayer;
     
     checkWin(0); 
     handleUnoCheck(0);
@@ -384,6 +398,7 @@ function reshuffleDeck() {
         // Cannot reshuffle if only the top card is left
         return false;
     }
+    // Remove top card, shuffle the rest, replace top card
     const topCard = gameState.discardPile.pop(); 
     gameState.deck = shuffle(gameState.discardPile);
     gameState.discardPile = [topCard];
@@ -502,18 +517,21 @@ function handlePlayerAction(cardIndex) {
     gameState.discardPile.push(cardPlayed);
     gameState.topCard = cardPlayed;
     
-    // Clear a previously set Wild color if a new card is played on top of it
+    // Clear the 'nextColor' property if the card played on top of the Wild is NOT a Wild itself
     if (gameState.topCard.nextColor) {
         delete gameState.topCard.nextColor;
     }
     
     // 4. Apply card effects and determine the next player
-    const result = applyCardEffect(cardPlayed, 0, gameState.deck, gameState.hands);
     
     // 5. Handle Wild Card color choice for the human player
     if (cardPlayed.color === 'BL') {
         showColorPicker(0, cardPlayed.value);
+        // The game flow pauses here until setWildColor is called
     } else {
+        // Non-Wild Card Play: Apply effect and proceed
+        const result = applyCardEffect(cardPlayed, 0, gameState.deck, gameState.hands);
+        
         // 6. Update game state and check for win
         gameState.currentPlayer = result.nextPlayer;
         checkWin(0);
@@ -558,12 +576,13 @@ function computerMove() {
         gameState.topCard = playableCard;
         if (gameState.topCard.nextColor) { delete gameState.topCard.nextColor; }
 
-        const result = applyCardEffect(playableCard, 1, gameState.deck, gameState.hands);
-
-        // Handle Wild Card color choice for the computer
+        // Handle Wild Card color choice for the computer (done inside showColorPicker)
         if (playableCard.color === 'BL') {
             showColorPicker(1, playableCard.value); 
+            // setWildColor is called immediately by showColorPicker(1, ...)
         } else {
+            // Non-Wild: Apply effect and pass turn
+            const result = applyCardEffect(playableCard, 1, gameState.deck, gameState.hands);
             gameState.currentPlayer = result.nextPlayer;
             checkWin(1);
             handleUnoCheck(1); 
@@ -574,11 +593,12 @@ function computerMove() {
         const playableFound = handleDrawAction(1); // Will draw until match or turn passes
         
         // If a playable card was found and turn hasn't passed (currentPlayer is still 1), computer must play it.
-        if (playableFound) {
+        if (playableFound && gameState.currentPlayer === 1) {
             // Re-check for a playable card (the one just drawn)
             let newPlayableIndex = -1;
             let newPlayableCard = null;
             
+            // Find the *first* playable card in the hand (it will be the one just drawn, as older cards were unplayable)
             for(let i = 0; i < computerHand.length; i++) {
                 if (canPlay(computerHand[i], topCard)) {
                     newPlayableIndex = i;
@@ -594,11 +614,11 @@ function computerMove() {
                 gameState.topCard = newPlayableCard;
                 if (gameState.topCard.nextColor) { delete gameState.topCard.nextColor; }
 
-                const result = applyCardEffect(newPlayableCard, 1, gameState.deck, gameState.hands);
-
                 if (newPlayableCard.color === 'BL') {
                     showColorPicker(1, newPlayableCard.value); 
+                    // setWildColor is called immediately by showColorPicker(1, ...)
                 } else {
+                    const result = applyCardEffect(newPlayableCard, 1, gameState.deck, gameState.hands);
                     gameState.currentPlayer = result.nextPlayer;
                     checkWin(1);
                     handleUnoCheck(1); 
