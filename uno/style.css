@@ -18,13 +18,13 @@ body {
 /* --- CORE CARD VISUAL STYLES (UPDATED) --- */
 /* -------------------------------------- */
 .card {
-    display: flex; /* Changed from inline-flex for better alignment */
+    display: flex; 
     justify-content: center;
     align-items: center;
-    width: 70px; /* Increased size for symbols/text */
-    height: 100px; /* Increased size for symbols/text */
+    width: 70px; 
+    height: 100px; 
     margin: 5px;
-    border-radius: 10px; /* Slightly more rounded */
+    border-radius: 10px; 
     font-size: 1.5em;
     font-weight: bold;
     cursor: pointer;
@@ -32,7 +32,7 @@ body {
     border: 3px solid transparent;
     transition: transform 0.1s;
     user-select: none;
-    line-height: 1; /* Helps with vertical alignment of symbols */
+    line-height: 1; 
 }
 
 .card:hover {
@@ -45,18 +45,27 @@ body {
     transform: none;
 }
 
-/* Color Classes (Existing) */
-.card.R, .color-btn.R { background-color: #D72600; color: white; } /* Red */
-.card.G, .color-btn.G { background-color: #379711; color: #333; }
-.card.B, .color-btn.B { background-color: #0956BF; color: #333; }
-.card.Y, .color-btn.Y { background-color: #ECD407; color: #333; }
-.card.BL { background-color: #111111; color: white; border: 3px solid #E0E0E0; } /* Black (Wild) - Added border */
+/* * Color Classes (Using Provided Hex Values and Correct Text Contrast) */
+/* Red (Sinopia: #D72600) -> Needs White Text */
+.card.R, .color-btn.R { background-color: #D72600; color: white; } 
+
+/* Green (Slimy Green: #379711) -> Needs White Text (based on brightness) */
+.card.G, .color-btn.G { background-color: #379711; color: white; } 
+
+/* Blue (Sapphire: #0956BF) -> Needs White Text */
+.card.B, .color-btn.B { background-color: #0956BF; color: white; } 
+
+/* Yellow (Safety Yellow: #ECD407) -> Needs Dark Text */
+.card.Y, .color-btn.Y { background-color: #ECD407; color: #333; } 
+
+/* Black (Wild) */
+.card.BL { background-color: #111111; color: white; border: 3px solid #E0E0E0; } 
 
 /* --------------------------------------- */
-/* --- TYPE-SPECIFIC STYLING (NEW) --- */
+/* --- TYPE-SPECIFIC STYLING --- */
 /* --------------------------------------- */
 
-/* 1. Number Cards (0-9) - Use large number font */
+/* 1. Number Cards (0-9) */
 .card:not(.BL):not([data-value="S"]):not([data-value="R"]):not([data-value="D2"]) {
     font-size: 40px;
 }
@@ -71,7 +80,6 @@ body {
 /* Skip (🚫) */
 .card[data-value="S"] {
     font-size: 40px; 
-    /* Ensure the Unicode symbol is centered */
     line-height: 100px; 
 }
 
@@ -87,11 +95,11 @@ body {
 
 /* Standard WILD Card (W) - Quad-Color Background */
 .card.BL[data-value="W"] {
-    color: black; /* Text should be black for contrast */
+    color: black; 
     font-size: 20px;
     font-weight: 900;
     
-    /* QUADRANT EFFECT using conic-gradient */
+    /* QUADRANT EFFECT using the provided Hex Codes */
     background: conic-gradient(
         #D72600 0deg 90deg,     /* Red */
         #ECD407 90deg 180deg,    /* Yellow */
@@ -111,12 +119,12 @@ body {
 }
 
 /* -------------------------------------- */
-/* --- Layout and Button Styles (Existing) --- */
+/* --- Layout and Button Styles --- */
 /* -------------------------------------- */
 
 #discard-area {
     margin: 20px 0;
-    min-height: 120px; /* Space for the top card */
+    min-height: 120px; 
 }
 
 /* Player Hand Layout */
@@ -130,7 +138,7 @@ body {
 /* Action Buttons */
 #draw-button, #start-button, .color-btn, #uno-button {
     padding: 10px 15px;
-    margin: 10px 5px; /* Adjusted margins slightly */
+    margin: 10px 5px; 
     border: none;
     border-radius: 5px;
     cursor: pointer;
@@ -144,7 +152,7 @@ body {
 }
 
 #uno-button {
-    background-color: #FF5733; /* Distinct color for UNO button */
+    background-color: #FF5733; 
     color: white;
 }
 
@@ -153,6 +161,6 @@ body {
     padding: 10px;
     margin-bottom: 10px;
     border-radius: 5px;
-    display: flex; /* Ensure color buttons line up */
+    display: flex; 
     justify-content: center;
 }
