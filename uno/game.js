@@ -104,7 +104,6 @@ function dealInitialCards() {
     do {
         // If the deck is empty, reshuffle discard pile (shouldn't happen on startup)
         if (gameState.deck.length === 0) {
-            // In a real game, this shouldn't happen on startup, but is a safety check
             gameState.deck = shuffle(gameState.discardPile.splice(0, gameState.discardPile.length - 1));
         }
         startCard = gameState.deck.pop();
@@ -132,7 +131,7 @@ function startGame() {
 // --- 2. Card Logic ---
 
 /**
- * Converts a card object to its display text.
+ * Converts a card object to its display text/symbol.
  * @param {Object} card - The card object.
  * @returns {string} The display text for the card.
  */
@@ -142,8 +141,8 @@ function getCardText(card) {
         if (card.value === 'W4') return '+4';
     }
     switch (card.value) {
-        case 'S': return 'SKIP';
-        case 'R': return 'REV';
+        case 'S': return 'Ø'; // Skip symbol
+        case 'R': return '⟲'; // Reverse symbol
         case 'D2': return '+2';
         default: return card.value.toString();
     }
@@ -189,15 +188,17 @@ function applyCardEffect(card, playerIndex, deck, hands) {
     
     let message = '';
 
+    const playerLabel = playerIndex === 0 ? 'You' : 'Computer';
+
     switch (card.value) {
         case 'S':
-            message = `${playerIndex === 0 ? 'You' : 'Computer'} played a SKIP.`;
+            message = `${playerLabel} played a SKIP (Ø).`;
             nextPlayer = (nextPlayer + gameState.direction) % numPlayers;
             if (nextPlayer < 0) nextPlayer += numPlayers;
             break;
         case 'R':
             gameState.direction *= -1;
-            message = `${playerIndex === 0 ? 'You' : 'Computer'} played a REVERSE. Direction changed.`;
+            message = `${playerLabel} played a REVERSE (⟲). Direction changed.`;
             // In 2-player, Reverse acts like a Skip
             if (numPlayers === 2) {
                 nextPlayer = (nextPlayer + gameState.direction) % numPlayers;
@@ -206,17 +207,17 @@ function applyCardEffect(card, playerIndex, deck, hands) {
             break;
         case 'D2':
             gameState.pendingDraw += 2;
-            message = `${playerIndex === 0 ? 'You' : 'Computer'} played a +2. The next player must draw 2.`;
+            message = `${playerLabel} played a +2. The next player must draw 2.`;
             break;
         case 'W4':
             gameState.pendingDraw += 4;
-            message = `${playerIndex === 0 ? 'You' : 'Computer'} played a WILD +4. The next player must draw 4.`;
+            message = `${playerLabel} played a WILD +4. The next player must draw 4.`;
             break;
         case 'W':
-            message = `${playerIndex === 0 ? 'You' : 'Computer'} played a WILD.`;
+            message = `${playerLabel} played a WILD.`;
             break;
         default:
-            message = `${playerIndex === 0 ? 'You' : 'Computer'} played a ${card.color} ${card.value}.`;
+            message = `${playerLabel} played a ${card.color} ${card.value}.`;
             break;
     }
     
@@ -237,13 +238,21 @@ function renderGame() {
         TOP_CARD_ELEM.className = `card ${gameState.topCard.color}`;
         TOP_CARD_ELEM.textContent = getCardText(gameState.topCard);
         
-        // If a Wild card set a color, update its display
+        // --- START: WILD CARD VISUAL FIX ---
         if (gameState.topCard.color === 'BL' && gameState.topCard.nextColor) {
-             TOP_CARD_ELEM.textContent += ` (${gameState.topCard.nextColor})`;
+             // Add a class for CSS styling and set a custom property for the color
+             TOP_CARD_ELEM.classList.add('has-next-color');
+             // Update the border color dynamically using a CSS variable
              TOP_CARD_ELEM.style.borderColor = `var(--color-${gameState.topCard.nextColor})`; 
+             
+             // Keep the display text clean (no appended color)
+             TOP_CARD_ELEM.textContent = getCardText(gameState.topCard);
         } else {
+             TOP_CARD_ELEM.classList.remove('has-next-color');
+             // Reset border for non-Wild or unplayed Wild cards
              TOP_CARD_ELEM.style.borderColor = 'transparent'; 
         }
+        // --- END: WILD CARD VISUAL FIX ---
     } else {
         TOP_CARD_ELEM.className = 'card';
         TOP_CARD_ELEM.textContent = 'Deck';
@@ -385,7 +394,6 @@ function reshuffleDeck() {
 /**
  * Handles the logic for drawing a card for the current player.
  * Implements "draw till match" for standard draws and handles penalty draws.
- * Renamed from drawCardForPlayer to be more descriptive of its role.
  * @param {number} playerIndex - The index of the player drawing (0 for human, 1 for computer).
  * @returns {boolean} True if a playable card was found/drawn, False if turn must pass.
  */
@@ -456,7 +464,6 @@ const drawCardForPlayer = handleDrawAction;
 
 /**
  * Handles the player clicking a card in their hand or the draw button.
- * Contains the fix for the Draw Card button.
  * Must be globally accessible.
  * @param {number | null} cardIndex - The index of the card in the player's hand, or null to draw.
  */
