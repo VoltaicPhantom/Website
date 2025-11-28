@@ -44,8 +44,8 @@ body {
 /* Color Classes */
 .card.R, .color-btn.R { background-color: #EE3322; color: white; } /* Red */
 .card.G, .color-btn.G { background-color: #22AA55; color: white; } /* Green */
-.card.B, .color-btn.B { background-color: #0077CC; color: white; } /* Blue */
-.card.Y, .color-btn.Y { background-color: #FFFF00; color: white; } /* Yellow */
+.card.B, .color-btn.B { background-color: #0088FF; color: white; } /* Slightly brighter blue */
+.card.Y, .color-btn.Y { background-color: #FFFF00; color: #333; } /* Yellow - Changed text to dark grey/black */
 .card.BL { background-color: #111111; color: white; } /* Black (Wild) */
 
 /* Special Card Styling for Top Card */
