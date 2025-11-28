@@ -1,8 +1,30 @@
+/* ========================================================== */
+/* --- 1. GLOBAL & LAYOUT STYLES --- */
+/* ========================================================== */
+
+/* Define UNO Colors using CSS Variables for easy maintenance */
+:root {
+    --color-R: #D72600; /* Red */
+    --color-G: #379711; /* Green */
+    --color-B: #0956BF; /* Blue */
+    --color-Y: #ECD407; /* Yellow */
+    --color-BL: #111111; /* Black (Wild/Draw Four) */
+    --color-BG: #f4f4f4; /* Light Grey Background */
+    --color-Text: #333;
+}
+
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
-    color: #333;
+    font-family: 'Arial', sans-serif;
+    background-color: var(--color-BG);
+    color: var(--color-Text);
     text-align: center;
+    margin: 0;
+    padding: 0;
+}
+
+h1 {
+    color: var(--color-Text);
+    margin-bottom: 5px;
 }
 
 #game-container {
@@ -10,101 +32,86 @@ body {
     margin: 20px auto;
     background-color: #fff;
     padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+#status-message {
+    min-height: 20px;
+    margin: 10px 0;
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #444;
 }
 
 /* -------------------------------------- */
-/* --- CORE CARD VISUAL STYLES (UPDATED) --- */
+/* --- 2. CORE CARD VISUAL STYLES --- */
 /* -------------------------------------- */
+
 .card {
     display: flex; 
     justify-content: center;
     align-items: center;
-    width: 70px; 
-    height: 100px; 
+    width: 80px; /* Slightly larger cards */
+    height: 120px; 
     margin: 5px;
-    border-radius: 10px; 
-    font-size: 1.5em;
-    font-weight: bold;
+    border-radius: 12px; 
+    font-size: 1.6em;
+    font-weight: 900;
     cursor: pointer;
-    box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.3);
-    border: 3px solid transparent;
-    transition: transform 0.1s;
+    box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3);
+    border: 5px solid transparent; /* Added space for dynamic border */
+    transition: transform 0.15s, opacity 0.3s;
     user-select: none;
     line-height: 1; 
+    color: white; /* Default text color for number/action cards */
 }
 
-.card:hover {
-    transform: translateY(-5px);
+.card:hover:not(.disabled) {
+    transform: translateY(-8px) scale(1.05);
 }
 
 .card.disabled {
-    opacity: 0.5;
+    opacity: 0.6;
     cursor: not-allowed;
     transform: none;
+    box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.2);
 }
 
-/* * Color Classes (Using Provided Hex Values and Correct Text Contrast) */
-/* Red (Sinopia: #D72600) -> Needs White Text */
-.card.R, .color-btn.R { background-color: #D72600; color: white; } 
 
-/* Green (Slimy Green: #379711) -> Needs White Text (based on brightness) */
-.card.G, .color-btn.G { background-color: #379711; color: white; } 
+/* --- 3. COLORED CARD STYLES --- */
 
-/* Blue (Sapphire: #0956BF) -> Needs White Text */
-.card.B, .color-btn.B { background-color: #0956BF; color: white; } 
+/* Red */
+.card.R { background-color: var(--color-R); }
+/* Green */
+.card.G { background-color: var(--color-G); }
+/* Blue */
+.card.B { background-color: var(--color-B); }
+/* Yellow */
+.card.Y { background-color: var(--color-Y); color: var(--color-Text); } /* Yellow text is black */
 
-/* Yellow (Safety Yellow: #ECD407) -> Needs Dark Text */
-.card.Y, .color-btn.Y { background-color: #ECD407; color: #333; } 
-
-/* Black (Wild) */
-.card.BL { background-color: #111111; color: white; border: 3px solid #E0E0E0; } 
-
-/* --------------------------------------- */
-/* --- TYPE-SPECIFIC STYLING --- */
-/* --------------------------------------- */
-
-/* 1. Number Cards (0-9) */
-.card:not(.BL):not([data-value="S"]):not([data-value="R"]):not([data-value="D2"]) {
-    font-size: 40px;
-}
-
-/* 2. Colored Action Cards */
-
-/* Draw Two (+2) */
-.card[data-value="D2"] {
-    font-size: 36px;
-}
-
-/* Skip (🚫) */
-.card[data-value="S"] {
-    font-size: 40px; 
-    line-height: 100px; 
-}
-
-/* Reverse (REVERSE) */
+/* Action Card Text Overrides (to ensure symbols are centered) */
+.card[data-value="S"],
 .card[data-value="R"] {
-    font-size: 18px; 
-    letter-spacing: 1px;
-    padding: 0 5px;
-    line-height: normal;
+    font-size: 2.2em; /* Increase size for symbols (Ø, ⟲) */
 }
 
-/* 3. Wild Cards */
 
-/* Standard WILD Card (W) - Quad-Color Background */
+/* --- 4. WILD CARD STYLES (BLACK) --- */
+
+/* Wild Card (W) */
 .card.BL[data-value="W"] {
-    color: black; 
+    background-color: var(--color-BL);
+    color: white;
     font-size: 20px;
     font-weight: 900;
     
-    /* QUADRANT EFFECT using the provided Hex Codes */
+    /* QUADRANT EFFECT (Standard UNO Wild look) */
     background: conic-gradient(
-        #D72600 0deg 90deg,     /* Red */
-        #ECD407 90deg 180deg,    /* Yellow */
-        #0956BF 180deg 270deg,   /* Blue */
-        #379711 270deg 360deg    /* Green */
+        var(--color-R) 0deg 90deg,     /* Red */
+        var(--color-Y) 90deg 180deg,    /* Yellow */
+        var(--color-B) 180deg 270deg,   /* Blue */
+        var(--color-G) 270deg 360deg    /* Green */
     );
     /* Subtle white outline to make text readable */
     text-shadow: 1px 1px 0 #FFFFFF, -1px -1px 0 #FFFFFF, 
@@ -113,13 +120,26 @@ body {
 
 /* Wild Draw Four (+4) */
 .card.BL[data-value="W4"] {
-    background-color: #111111;
+    background-color: var(--color-BL);
     color: white;
     font-size: 36px;
 }
 
 /* -------------------------------------- */
-/* --- Layout and Button Styles --- */
+/* --- 5. WILD CARD BORDER DYNAMIC STYLING (The Fix) --- */
+/* -------------------------------------- */
+
+/* This class is added by game.js when a wild card is played and a color is chosen. */
+/* The border color itself is set inline by JavaScript. */
+.card.BL.has-next-color {
+    /* Define the border style thickness, JS handles the color via style.borderColor */
+    border-style: solid;
+    border-width: 5px;
+}
+
+
+/* -------------------------------------- */
+/* --- 6. LAYOUT AND BUTTON STYLES --- */
 /* -------------------------------------- */
 
 #discard-area {
@@ -132,35 +152,84 @@ body {
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
-    min-height: 100px;
+    min-height: 130px;
+    padding: 10px 0;
+}
+
+/* Opponent Area */
+#opponent-area {
+    margin-bottom: 20px;
+}
+
+#computer-hand-size {
+    font-weight: bold;
 }
 
 /* Action Buttons */
-#draw-button, #start-button, .color-btn, #uno-button {
-    padding: 10px 15px;
-    margin: 10px 5px; 
+#draw-button, #start-button, #uno-button, .color-btn {
+    padding: 10px 20px;
+    margin: 5px;
     border: none;
-    border-radius: 5px;
-    cursor: pointer;
+    border-radius: 8px;
     font-weight: bold;
-    transition: background-color 0.1s;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    color: white;
 }
 
-#start-button {
-    background-color: #007BFF;
-    color: white;
+#draw-button {
+    background-color: #555;
+}
+
+#draw-button:hover:not(:disabled) {
+    background-color: #333;
+}
+
+#draw-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
 }
 
 #uno-button {
-    background-color: #FF5733; 
+    background-color: #f39c12; /* Orange */
+}
+
+#uno-button:hover:not(:disabled) {
+    background-color: #e67e22;
+}
+
+#start-button {
+    background-color: var(--color-G);
+    color: white;
+    font-size: 1.1em;
+}
+
+#start-button:hover {
+    background-color: #27ae60;
+}
+
+/* Color Picker Buttons */
+#color-picker {
+    padding: 10px;
+    margin: 10px auto;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+}
+
+.color-btn {
+    width: 80px;
+    height: 35px;
+    margin: 5px 8px;
     color: white;
 }
 
-#color-picker {
-    border: 1px solid #ccc;
-    padding: 10px;
-    margin-bottom: 10px;
-    border-radius: 5px;
-    display: flex; 
-    justify-content: center;
+.color-btn.R { background-color: var(--color-R); }
+.color-btn.G { background-color: var(--color-G); }
+.color-btn.B { background-color: var(--color-B); }
+.color-btn.Y { background-color: var(--color-Y); color: var(--color-Text); } /* Yellow text is black */
+
+.color-btn:hover {
+    opacity: 0.8;
 }
