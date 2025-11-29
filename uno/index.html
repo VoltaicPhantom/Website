@@ -3,15 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simplistic Uno Clone (4-Player)</title>
+    <title>Network Uno Clone</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* ADDED for simple lobby styling */
+        #lobby-settings {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            text-align: left;
+        }
+        #lobby-settings label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        #lobby-settings select, #lobby-settings input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
 </head>
 <body>
-    <div id="status-message"></div>
-    <button id="start-button" onclick="startGame()">Start New Game</button>
 
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <h1>🃏 Network Uno Clone</h1>
+
+    <div id="game-container">
+        <div id="opponent-area" style="display: flex; justify-content: space-around; margin-bottom: 20px;">
+            <div class="player-slot" id="player-slot-1">
+                <p>Player 2:</p>
+                <div id="player-hand-size-1" class="hand-size"></div>
+            </div>
+            <div class="player-slot" id="player-slot-2">
+                <p>Player 3:</p>
+                <div id="player-hand-size-2" class="hand-size"></div>
+            </div>
+            <div class="player-slot" id="player-slot-3">
+                <p>Player 4:</p>
+                <div id="player-hand-size-3" class="hand-size"></div>
+            </div>
+        </div>
+        
+        <div id="discard-area">
+            <p>🔥 Top Card:</p>
+            <div id="top-card" class="card"></div>
+        </div>
+
+        <div id="color-picker" style="display: none;">
+            <h3>Choose a Wild Color:</h3>
+            <button class="color-btn R" onclick="setWildColor('R')">Red</button>
+            <button class="color-btn G" onclick="setWildColor('G')">Green</button>
+            <button class="color-btn B" onclick="setWildColor('B')">Blue</button>
+            <button class="color-btn Y" onclick="setWildColor('Y')">Yellow</button>
+        </div>
+
+        <div id="player-area">
+            <p id="player-hand-title">👤 Your Hand:</p>
+            <div id="player-hand-container"></div>
+            <button id="draw-button" onclick="handlePlayerAction(null)">Draw Card</button>
+            <button id="uno-button" disabled onclick="declareUno()">UNO!</button>
+        </div>
+    </div>
     
+    <div id="status-message">Connecting to Server...</div>
+    
+    <div id="lobby-settings">
+        <h2>Lobby Settings</h2>
+        
+        <label for="game-type">Game Type:</label>
+        <select id="game-type">
+            <option value="public">Public (Joinable)</option>
+            <option value="private">Private (Invite Only)</option>
+        </select>
+        
+        <label for="ai-count">AI Opponents (0-3):</label>
+        <input type="number" id="ai-count" min="0" max="3" value="3">
+        
+        <label for="game-id">Game ID (Optional):</label>
+        <input type="text" id="game-id" placeholder="Enter ID to join or leave blank to create">
+        
+        <button id="start-button" onclick="joinLobby()">Join/Create Game</button>
+    </div>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="game.js"></script>
+    <script>
+        // No automatic startGame() here, the user must click the Join/Create Game button.
+    </script>
 </body>
 </html>
