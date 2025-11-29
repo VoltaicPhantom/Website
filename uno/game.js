@@ -1,60 +1,104 @@
 // =====================================================================
-// === NETWORK CLIENT LOGIC ===
+// === NETWORK CLIENT LOGIC (Revised) ===
 // =====================================================================
 
 // Global State (Only holds the state received from the server)
 let gameState = {};
-let myPlayerId = 0; // Placeholder: Assume Player 1 (index 0) is the user on this browser.
-                    // In a real lobby, the server assigns this ID (0-3).
+let myPlayerId = -1; // -1 means not assigned
+let myGameId = null;
 
 // --- DOM Element References ---
-// (References remain the same for UI manipulation)
 const STATUS = document.getElementById('status-message');
 const TOP_CARD_ELEM = document.getElementById('top-card');
 const PLAYER_HAND_TITLE = document.getElementById('player-hand-title');
 const PLAYER_HAND_ELEM = document.getElementById('player-hand-container');
-// References for 4-player HTML (Assuming 4-player HTML structure from earlier)
-const COMPUTER_SIZE_ELEMS = [
-    document.getElementById('player-hand-size-1'), // Player 2 Hand Size
-    document.getElementById('player-hand-size-2'), // Player 3 Hand Size
-    document.getElementById('player-hand-size-3')  // Player 4 Hand Size
-];
 const COLOR_PICKER_ELEM = document.getElementById('color-picker');
 const DRAW_BUTTON = document.getElementById('draw-button');
 const START_BUTTON = document.getElementById('start-button');
 const UNO_BUTTON = document.getElementById('uno-button');
 
+// --- NEW Lobby DOM Elements ---
+const LOBBY_SETTINGS = document.getElementById('lobby-settings');
+const GAME_TYPE_ELEM = document.getElementById('game-type');
+const AI_COUNT_ELEM = document.getElementById('ai-count');
+const GAME_ID_ELEM = document.getElementById('game-id');
+
+// References for Opponent Hand Sizes (Assuming 4-player HTML structure)
+const OPPONENT_SIZE_ELEMS = [
+    document.getElementById('player-hand-size-1'), // Player 2 Hand Size
+    document.getElementById('player-hand-size-2'), // Player 3 Hand Size
+    document.getElementById('player-hand-size-3')  // Player 4 Hand Size
+];
+
 
 // =====================================================================
-// === SOCKET.IO NETWORK CONNECTION ===
+// === SOCKET.IO NETWORK CONNECTION AND LOBBY HANDLERS ===
 // =====================================================================
 
-// Connect to the secure API endpoint
-// Nginx handles the HTTPS and routing to port 3000
 const socket = io('https://api.sbrownit.co.uk'); 
 
 socket.on('connect', () => {
-    STATUS.textContent = '✅ Connected to server. Ready to join a game.';
+    STATUS.textContent = '✅ Connected to server.';
     START_BUTTON.disabled = false;
-    // Request a Player ID from the server
-    socket.emit('request_player_id'); 
 });
 
-socket.on('player_id_assigned', (assignedId) => {
-    myPlayerId = assignedId;
+/**
+ * Replaces startGame. Collects settings and asks the server to create/join a game.
+ */
+function joinLobby() {
+    if (!socket.connected) {
+        showStatus('Not connected to the server. Please wait.');
+        return;
+    }
+
+    const requestedGameId = GAME_ID_ELEM.value.trim();
+    const gameType = GAME_TYPE_ELEM.value;
+    const aiCount = parseInt(AI_COUNT_ELEM.value);
+
+    // Send the request to the server
+    socket.emit('join_or_create_game', {
+        requestedGameId: requestedGameId,
+        gameType: gameType,
+        aiCount: aiCount
+    });
+
+    START_BUTTON.textContent = 'Awaiting Server Response...';
+    START_BUTTON.disabled = true;
+    showStatus('Requesting game...');
+}
+
+socket.on('game_joined', (data) => {
+    myGameId = data.gameId;
+    myPlayerId = data.playerId;
+
     PLAYER_HAND_TITLE.textContent = `👤 Player ${myPlayerId + 1} Hand:`;
-    showStatus(`You are Player ${myPlayerId + 1}.`);
+    LOBBY_SETTINGS.style.display = 'none'; // Hide lobby controls
+    
+    showStatus(`Joined Game ID: ${myGameId}. You are Player ${myPlayerId + 1}. Waiting for game to start...`);
+    START_BUTTON.textContent = `Game ID: ${myGameId}`; // Display ID in the button area
+    START_BUTTON.disabled = false; // Allow interaction for now (e.g. leaving game)
 });
+
+socket.on('waiting_for_players', (data) => {
+    showStatus(`Waiting for ${data.neededPlayers} more human player(s) to start Game ${myGameId}.`);
+});
+
+socket.on('game_start', (initialState) => {
+    gameState = initialState;
+    showStatus('Game started! It\'s your turn.');
+    // Start button remains visible but its function is now 'leave game' or similar
+    renderGame();
+});
+
+// --- Existing Game Handlers (mostly unchanged) ---
 
 socket.on('state_update', (newState) => {
-    // This is the core update loop: the server sends the entire game state
     gameState = newState;
     renderGame();
 });
 
 socket.on('game_error', (message) => {
     showStatus(`❗ Server Error: ${message}`);
-    // Optionally re-render to revert any invalid client-side clicks
     renderGame();
 });
 
@@ -69,33 +113,17 @@ socket.on('disconnect', () => {
 // =====================================================================
 
 /**
- * Sends a command to the server to start/join a game.
- */
-function startGame() {
-    if (socket.connected) {
-        // In a complex game, this would emit a 'create_lobby' or 'join_lobby' event.
-        // For simplicity, we emit 'start_game' and let the server handle player setup.
-        socket.emit('start_game'); 
-        START_BUTTON.textContent = 'Waiting for Players...';
-        START_BUTTON.disabled = true;
-    } else {
-        showStatus('Not connected to the server. Please check the network.');
-    }
-}
-
-/**
  * Sends the player's action (playing a card or drawing) to the server.
  */
 function handlePlayerAction(cardIndex) {
-    if (!socket.connected || gameState.currentPlayer !== myPlayerId) return;
+    if (!socket.connected || gameState.currentPlayer !== myPlayerId || gameState.gameOver) return;
 
     if (cardIndex === null) {
         // Player clicked Draw Card
-        socket.emit('draw_card', { playerId: myPlayerId });
+        socket.emit('draw_card', { gameId: myGameId, playerId: myPlayerId });
     } else {
         // Player clicked a card to play
-        // We send the INDEX, the server will check the hand and validate the move.
-        socket.emit('play_card', { playerId: myPlayerId, cardIndex: cardIndex });
+        socket.emit('play_card', { gameId: myGameId, playerId: myPlayerId, cardIndex: cardIndex });
     }
 }
 
@@ -104,9 +132,10 @@ function handlePlayerAction(cardIndex) {
  */
 function setWildColor(chosenColor) {
     COLOR_PICKER_ELEM.style.display = 'none';
-    if (!socket.connected) return;
+    if (!socket.connected || gameState.currentPlayer !== myPlayerId) return;
 
     socket.emit('set_wild_color', { 
+        gameId: myGameId, 
         playerId: myPlayerId, 
         color: chosenColor 
     });
@@ -118,8 +147,7 @@ function setWildColor(chosenColor) {
 function declareUno() {
     if (!socket.connected || gameState.hands[myPlayerId].length !== 1) return;
     
-    // Server handles the validation (did they just play, is it their turn, etc.)
-    socket.emit('declare_uno', { playerId: myPlayerId });
+    socket.emit('declare_uno', { gameId: myGameId, playerId: myPlayerId });
 }
 
 
@@ -127,101 +155,41 @@ function declareUno() {
 // === UI RENDERING (Based on Server State) ===
 // =====================================================================
 
-/**
- * Renders a single card element. (Functions are kept client-side for visuals)
- */
-function renderCard(card, isClickable = false, index = -1) {
-    const cardElem = document.createElement('div');
-    const displayColor = card.nextColor || card.color;
-    
-    cardElem.className = `card ${displayColor}`;
-    cardElem.dataset.value = card.value;
-    
-    // Helper function (must be moved here from original game.js)
-    const getCardDisplayText = (value) => {
-        switch (String(value)) {
-            case 'D2': return '+2'; case 'S': return '🚫'; 
-            case 'R': return '⟲'; case 'W': return 'WILD'; 
-            case 'W4': return '+4'; default: return String(value);
-        }
-    };
-    
-    cardElem.textContent = getCardDisplayText(card.value);
-    
-    if (card.color === 'BL' && card.nextColor) {
-        cardElem.classList.add('has-next-color');
-    }
+// (Keep the RENDER functions: renderCard, renderGame, showStatus exactly as they were 
+// in the previous rewritten game.js, as they handle the visual display.)
 
-    if (isClickable) {
-        cardElem.onclick = () => handlePlayerAction(index);
-    } else {
-        cardElem.classList.add('disabled');
-        cardElem.onclick = null;
-    }
-
-    return cardElem;
-}
-
-/**
- * Updates the entire UI based on the current game state received from the server.
- */
 function renderGame() {
+    // ... (The entire renderGame function from the previous step) ...
+    // Note: This must be updated to correctly handle 4 player slots based on myPlayerId
+    
     if (!gameState || !gameState.hands || gameState.gameOver) {
-        if (gameState.gameOver) {
-            STATUS.textContent = gameState.winner !== undefined && gameState.winner !== -1 
-                ? `🎉 Player ${gameState.winner + 1} WINS! 🎉` 
-                : 'Game Ready / Server Disconnected.';
-        }
-        DRAW_BUTTON.disabled = true;
-        UNO_BUTTON.disabled = true;
-        START_BUTTON.style.display = 'block';
+        // ... (Game Over and Initial State Logic) ...
         return;
     }
     
-    START_BUTTON.style.display = 'none';
+    // ... (rest of the rendering logic) ...
+
     const isMyTurn = gameState.currentPlayer === myPlayerId;
     const myHand = gameState.hands[myPlayerId];
-    
-    // 1. Update Status Message
-    STATUS.textContent = isMyTurn ? `Your turn (Player ${myPlayerId + 1}).` : `Waiting for Player ${gameState.currentPlayer + 1}...`;
-    if (gameState.pendingDraw > 0) {
-        STATUS.textContent += ` (Must Draw ${gameState.pendingDraw}.)`;
-    }
-    
-    // 2. Update Top Card (If topCard exists)
-    TOP_CARD_ELEM.innerHTML = '';
-    if (gameState.topCard) {
-        const topCardElement = renderCard(gameState.topCard);
-        if (gameState.topCard.color === 'BL' && gameState.topCard.nextColor) {
-            topCardElement.style.borderColor = `var(--color-${gameState.topCard.nextColor})`;
-        } else {
-            topCardElement.style.borderColor = 'transparent';
-        }
-        TOP_CARD_ELEM.appendChild(topCardElement);
-    }
-    
-    // 3. Update Player Hand (Only display YOUR hand)
-    PLAYER_HAND_ELEM.innerHTML = '';
-    myHand.forEach((card, index) => {
-        // The server will have told us if the card is playable, but for UI feedback, 
-        // we can assume cards are clickable only on our turn.
-        const isClickable = isMyTurn; 
-        const cardElem = renderCard(card, isClickable, index);
-        PLAYER_HAND_ELEM.appendChild(cardElem);
-    });
 
-    // 4. Update Opponent Hand Sizes (Rely on 4-player HTML structure)
+    // ... (Update Status, Top Card, Player Hand) ...
+
+    // 4. Update Opponent Hand Sizes (Handles up to 3 opponents relative to myPlayerId)
+    // OPPONENT_SIZE_ELEMS is an array of 3 elements.
     for (let i = 0; i < 3; i++) {
-        const opponentId = (myPlayerId + i + 1) % gameState.hands.length; // Rotate through opponents
-        const elem = COMPUTER_SIZE_ELEMS[i];
+        // Calculate the index of the opponent relative to the full hands array (0-3)
+        // If 4 players: (0+1)%4=1, (0+2)%4=2, (0+3)%4=3
+        const opponentIndex = (myPlayerId + i + 1) % gameState.hands.length; 
+        const elem = OPPONENT_SIZE_ELEMS[i];
         
-        if (elem && gameState.hands[opponentId]) {
-             const handSize = gameState.hands[opponentId].length;
-             elem.textContent = `${handSize} cards`;
+        if (elem && gameState.hands[opponentIndex]) {
+             const handSize = gameState.hands[opponentIndex].length;
+             // Display the player number instead of generic "Computer 1"
+             elem.textContent = `Player ${opponentIndex + 1}: ${handSize} cards`;
             
              const container = elem.closest('.player-slot');
              if (container) {
-                 if (gameState.currentPlayer === opponentId) {
+                 if (gameState.currentPlayer === opponentIndex) {
                       container.classList.add('is-current-player');
                  } else {
                       container.classList.remove('is-current-player');
@@ -232,10 +200,11 @@ function renderGame() {
     
     // 5. Button and Color Picker States
     DRAW_BUTTON.disabled = !isMyTurn; 
+    // UNO button is enabled if the player has 2 cards and it's their turn
     UNO_BUTTON.disabled = !(isMyTurn && myHand.length === 2);
     
-    // Show color picker only if it's our turn and the server says we need to pick a color (e.g., topCard.value === 'W')
-    if (isMyTurn && gameState.topCard && gameState.topCard.value === 'W' && !gameState.topCard.nextColor) {
+    // Show color picker only if it's our turn and the server says we need to pick a color
+    if (isMyTurn && gameState.topCard && (gameState.topCard.value === 'W' || gameState.topCard.value === 'W4') && !gameState.topCard.nextColor) {
         COLOR_PICKER_ELEM.style.display = 'flex';
         DRAW_BUTTON.disabled = true;
         UNO_BUTTON.disabled = true;
@@ -243,19 +212,4 @@ function renderGame() {
         COLOR_PICKER_ELEM.style.display = 'none';
     }
 }
-
-/**
- * Displays a status message to the user.
- */
-function showStatus(message) {
-    STATUS.textContent = message;
-}
-
-// Initial setup to display the start screen
-document.addEventListener('DOMContentLoaded', () => {
-    // Dummy initial state until the server connects
-    gameState = { hands: [[], [], [], []], topCard: {color: 'BL', value: 'W'}, gameOver: false, currentPlayer: -1 };
-    START_BUTTON.disabled = true; // Wait for socket connection
-    showStatus('Connecting to API server...');
-    renderGame(); 
-});
+// ... (The rest of the rendering functions from the previous step) ...
