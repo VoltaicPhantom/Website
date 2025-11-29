@@ -38,9 +38,10 @@ const OPPONENT_SIZE_ELEMS = [
 // =====================================================================
 
 // Connect to the secure API endpoint with the explicit path
+// FIX #1: Re-adding the path and transports required for Nginx proxy
 const socket = io('https://api.sbrownit.co.uk', { 
-    path: '/socket.io/', // <-- CORRECT: Matches Nginx and server.js path
-    transports: ['websocket'] // <-- CORRECT: Ensures WebSocket is used over the proxy
+    path: '/socket.io/', 
+    transports: ['websocket'] 
 }); 
 
 socket.on('connect', () => {
@@ -184,15 +185,16 @@ function updateOpponentNames(playerList, aiCount) {
 
 // =====================================================================
 // === GAME ACTIONS (Sending Commands to Server) ===
-// (These remain the same, just ensure they use myGameId)
 // =====================================================================
 
 function handlePlayerAction(cardIndex) {
     if (!socket.connected || gameState.currentPlayer !== myPlayerId || gameState.gameOver) return;
-    // ... (rest of the logic remains the same, sending 'draw_card' or 'play_card' with gameId)
+    
     if (cardIndex === null) {
+        // Draw card action
         socket.emit('draw_card', { gameId: myGameId, playerId: myPlayerId });
     } else {
+        // Play card action
         socket.emit('play_card', { gameId: myGameId, playerId: myPlayerId, cardIndex: cardIndex });
     }
 }
@@ -211,13 +213,24 @@ function declareUno() {
 
 
 // =====================================================================
-// === UI RENDERING (From previous step) ===
+// === UI RENDERING ===
 // =====================================================================
 function renderCard(card, isClickable = false, index = -1) {
     const cardElement = document.createElement('div');
     cardElement.className = `uno-card ${card.color} ${card.value}`;
-    cardElement.textContent = card.value === 'D2' ? 'Draw 2' : card.value; // Example text logic
+    // Simple display logic for action cards
+    if (card.value === 'D2') cardElement.textContent = 'Draw 2';
+    else if (card.value === 'S') cardElement.textContent = 'Skip';
+    else if (card.value === 'R') cardElement.textContent = 'Reverse';
+    else if (card.value === 'W') cardElement.textContent = 'Wild';
+    else if (card.value === 'W4') cardElement.textContent = 'Draw 4';
+    else cardElement.textContent = card.value; // Numeric cards
     
+    // Add visual for the chosen color of a Black card
+    if (card.color === 'BL' && card.nextColor) {
+        cardElement.classList.add(`chosen-${card.nextColor}`);
+    }
+
     if (isClickable) {
         cardElement.classList.add('playable');
         cardElement.onclick = () => handlePlayerAction(index);
@@ -226,10 +239,15 @@ function renderCard(card, isClickable = false, index = -1) {
 }
 
 function renderGame() {
-    if (!gameState || !gameState.hands || gameState.gameOver) {
+    // FIX #2: Prevent TypeError by checking if the player is actively in a game.
+    if (myPlayerId === -1 || !gameState || !gameState.hands || gameState.gameOver) {
         // Clear game board elements if in lobby/game over state
         TOP_CARD_ELEM.innerHTML = '';
         PLAYER_HAND_ELEM.innerHTML = '';
+        // Clear opponent slots display when not in a game/lobby state
+        for (const elem of OPPONENT_SIZE_ELEMS) {
+             if(elem) elem.textContent = '---'; 
+        }
         return;
     }
     
@@ -255,12 +273,13 @@ function renderGame() {
     // 4. Update Opponent Hand Sizes and highlights
     const totalPlayers = gameState.hands.length;
     for (let i = 0; i < 3; i++) {
+        // Calculate the index of the opponent relative to 'myPlayerId'
         const opponentIndex = (myPlayerId + i + 1) % totalPlayers; 
         const elem = OPPONENT_SIZE_ELEMS[i];
         
         if (elem && gameState.hands[opponentIndex]) {
-             const handSize = gameState.hands[opponentIndex].length;
-             // Only display the card count here. Name is updated by updateOpponentNames
+             // gameState.hands[opponentIndex] is an object {length: X} from the server
+             const handSize = gameState.hands[opponentIndex].length || 0; 
              elem.textContent = `${handSize} cards`; 
             
              const container = elem.closest('.player-slot');
@@ -278,26 +297,28 @@ function renderGame() {
     DRAW_BUTTON.disabled = !isMyTurn; 
     UNO_BUTTON.disabled = !(isMyTurn && myHand.length === 2);
     
-    // Logic for color picker display when Wild card is played
-    if (isMyTurn && gameState.topCard && (gameState.topCard.value === 'W' || gameState.topCard.value === 'W4')) {
-        // We rely on the server to handle the 'nextColor' state, but client must show picker if it's a BL card
-        // For simplicity on the client side, we always show the picker if the top card is a BL card AND it's the player's turn
-        if (gameState.topCard.color === 'BL') { 
-            COLOR_PICKER_ELEM.style.display = 'flex';
-            DRAW_BUTTON.disabled = true;
-            UNO_BUTTON.disabled = true;
-            
-            // Dynamically create color buttons here (copied from previous step)
-            COLOR_PICKER_ELEM.innerHTML = '<h3>Choose a Wild Color:</h3>';
-            const colors = ['R', 'G', 'B', 'Y'];
-            colors.forEach(color => {
-                const btn = document.createElement('button');
-                btn.className = `color-btn ${color}`;
-                btn.textContent = color;
-                btn.onclick = () => setWildColor(color); // setWildColor is the function that emits
-                COLOR_PICKER_ELEM.appendChild(btn);
-            });
-        }
+    // Logic for color picker display when a Wild card is played and color hasn't been chosen
+    // The server will stop the game flow by not advancing currentPlayer if a BL card is played
+    const requiresColorChoice = isMyTurn && 
+                                gameState.topCard && 
+                                (gameState.topCard.value === 'W' || gameState.topCard.value === 'W4') &&
+                                gameState.topCard.color === 'BL'; // Check if it's still a black wild card
+
+    if (requiresColorChoice) {
+        COLOR_PICKER_ELEM.style.display = 'flex';
+        DRAW_BUTTON.disabled = true;
+        UNO_BUTTON.disabled = true;
+        
+        // Dynamically create color buttons
+        COLOR_PICKER_ELEM.innerHTML = '<h3>Choose a Wild Color:</h3>';
+        const colors = ['R', 'G', 'B', 'Y'];
+        colors.forEach(color => {
+            const btn = document.createElement('button');
+            btn.className = `color-btn ${color}`;
+            btn.textContent = color;
+            btn.onclick = () => setWildColor(color); // setWildColor is the function that emits
+            COLOR_PICKER_ELEM.appendChild(btn);
+        });
     } else {
         COLOR_PICKER_ELEM.style.display = 'none';
     }
@@ -322,7 +343,7 @@ function showStatus(message) {
 // Initial setup to display the start screen
 document.addEventListener('DOMContentLoaded', () => {
     // Dummy initial state until the server connects
-    gameState = { hands: [[], [], [], []], topCard: {color: 'BL', value: 'W'}, gameOver: false, currentPlayer: -1 };
+    gameState = { hands: [[], [], [], []], topCard: {color: 'BL', value: 'W'}, gameOver: true, currentPlayer: -1 };
     LOBBY_ACTION_BUTTON.disabled = true; // Wait for socket connection
     showStatus('Connecting to API server...');
     renderGame(); 
