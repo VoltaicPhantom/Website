@@ -7,41 +7,11 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-    <h1>🃏 Simple Uno Clone (4-Player)</h1>
-
-    <div id="game-container">
-        
-        <div id="opponent-area">
-            <h3>🤖 Opponents:</h3>
-            <div class="opponent-hands-container">
-                <div><p>Computer 1:</p><div id="computer-hand-size-1" class="hand-size"></div></div>
-                <div><p>Computer 2:</p><div id="computer-hand-size-2" class="hand-size"></div></div>
-                <div><p>Computer 3:</p><div id="computer-hand-size-3" class="hand-size"></div></div>
-            </div>
-        </div>
-        
-        <div id="discard-area">
-            <p>🔥 Top Card:</p>
-            <div id="top-card" class="card"></div>
-        </div>
-
-        <div id="color-picker" style="display: none;">
-            <h3>Choose a Wild Color:</h3>
-        </div>
-
-        <div id="player-area">
-            <p>👤 Your Hand:</p>
-            <div id="player-hand-container">
-            </div>
-            <button id="draw-button" onclick="handlePlayerAction(null)">Draw Card</button>
-            <button id="uno-button" disabled onclick="declareUno()">UNO!</button>
-        </div>
-    </div>
-
     <div id="status-message"></div>
     <button id="start-button" onclick="startGame()">Start New Game</button>
 
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    
     <script src="game.js"></script>
 </body>
 </html>
