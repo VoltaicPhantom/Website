@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InfraPanel — Systems Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ── RESET & ROOT ──────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-base:    #080c10;
+    --bg-surface: #0d1117;
+    --bg-raised:  #111820;
+    --bg-inset:   #060a0e;
+    --border:     #1c2530;
+    --border-hi:  #253040;
+    --text-pri:   #d4dde8;
+    --text-sec:   #6a7d91;
+    --text-dim:   #354455;
+    --accent-fh:  #00b4d8;   /* Fasthosts – cyan */
+    --accent-pve: #f97316;   /* Proxmox   – orange */
+    --accent-mde: #6366f1;   /* Defender  – indigo */
+    --ok:         #22c55e;
+    --warn:       #f59e0b;
+    --crit:       #ef4444;
+    --font-mono:  'IBM Plex Mono', monospace;
+    --font-body:  'IBM Plex Sans', sans-serif;
+    --radius:     6px;
+    --transition: 150ms ease;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg-base);
+    color: var(--text-pri);
+    font-family: var(--font-body);
+    font-size: 13px;
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+
+  /* scanline grain overlay */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+  }
+
+  /* ── LAYOUT ────────────────────────────────────────────────────── */
+  #app { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* ── TOPBAR ────────────────────────────────────────────────────── */
+  #topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px;
+    height: 52px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+    flex-shrink: 0;
+  }
+
+  .topbar-brand {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .topbar-logo {
+    width: 28px; height: 28px; background: var(--accent-fh);
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    flex-shrink: 0;
+    animation: pulse-logo 4s ease-in-out infinite;
+  }
+  @keyframes pulse-logo {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+  .topbar-title {
+    font-family: var(--font-mono);
+    font-weight: 700; font-size: 15px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-pri);
+  }
+  .topbar-title span { color: var(--accent-fh); }
+
+  .topbar-right { display: flex; align-items: center; gap: 20px; }
+
+  #clock {
+    font-family: var(--font-mono);
+    font-size: 12px; color: var(--text-sec);
+    letter-spacing: 0.08em;
+  }
+
+  #refresh-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 12px; border-radius: var(--radius);
+    background: transparent; border: 1px solid var(--border-hi);
+    color: var(--text-sec); font-family: var(--font-mono);
+    font-size: 11px; cursor: pointer; letter-spacing: 0.06em;
+    text-transform: uppercase; transition: all var(--transition);
+  }
+  #refresh-btn:hover { border-color: var(--accent-fh); color: var(--accent-fh); }
+  #refresh-btn svg { transition: transform 0.4s; }
+  #refresh-btn.spinning svg { transform: rotate(360deg); }
+
+  .demo-pill {
+    font-family: var(--font-mono); font-size: 10px;
+    padding: 3px 8px; border-radius: 100px;
+    background: rgba(243,156,18,0.12); color: var(--warn);
+    border: 1px solid rgba(243,156,18,0.3);
+    letter-spacing: 0.08em;
+  }
+
+  /* ── NAV TABS ──────────────────────────────────────────────────── */
+  #nav {
+    display: flex; gap: 0;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+    flex-shrink: 0;
+  }
+
+  .nav-tab {
+    padding: 12px 20px;
+    font-family: var(--font-mono); font-size: 11px;
+    font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text-dim); border: none; background: none;
+    cursor: pointer; position: relative;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color var(--transition);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .nav-tab:hover { color: var(--text-sec); }
+  .nav-tab.active { color: var(--text-pri); border-bottom-color: currentColor; }
+  .nav-tab.fh.active  { color: var(--accent-fh); }
+  .nav-tab.pve.active { color: var(--accent-pve); }
+  .nav-tab.mde.active { color: var(--accent-mde); }
+
+  .tab-badge {
+    font-size: 10px; padding: 1px 6px; border-radius: 100px;
+    font-family: var(--font-mono); line-height: 1.6;
+  }
+  .fh  .tab-badge { background: rgba(0,180,216,0.15); color: var(--accent-fh); }
+  .pve .tab-badge { background: rgba(249,115,22,0.15); color: var(--accent-pve); }
+  .mde .tab-badge { background: rgba(99,102,241,0.15); color: var(--accent-mde); }
+
+  /* ── MAIN ──────────────────────────────────────────────────────── */
+  #main {
+    flex: 1; padding: 24px 28px;
+    display: flex; flex-direction: column; gap: 20px;
+  }
+
+  /* panels */
+  .panel { display: none; flex-direction: column; gap: 20px; animation: fade-in 0.2s ease; }
+  .panel.active { display: flex; }
+  @keyframes fade-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── GRID HELPERS ──────────────────────────────────────────────── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+
+  /* ── CARD ──────────────────────────────────────────────────────── */
+  .card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+  }
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .card-label {
+    font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim);
+  }
+
+  /* ── STAT TILES ────────────────────────────────────────────────── */
+  .stat-tile {
+    background: var(--bg-inset);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+  .stat-value {
+    font-family: var(--font-mono); font-size: 30px; font-weight: 700;
+    line-height: 1; letter-spacing: -0.02em;
+  }
+  .stat-label {
+    font-size: 11px; color: var(--text-sec); margin-top: 6px;
+    letter-spacing: 0.04em;
+  }
+  .stat-sub {
+    font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); margin-top: 3px;
+  }
+
+  /* ── TABLE ROWS ────────────────────────────────────────────────── */
+  .row-table { display: flex; flex-direction: column; gap: 6px; }
+
+  .row-item {
+    display: grid; align-items: center;
+    background: var(--bg-inset); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 10px 14px;
+    transition: border-color var(--transition);
+  }
+  .row-item:hover { border-color: var(--border-hi); }
+
+  .row-header {
+    display: grid; align-items: center;
+    padding: 4px 14px;
+    font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim);
+  }
+
+  /* ── STATUS DOT ────────────────────────────────────────────────── */
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; display: inline-block;
+  }
+  .dot.ok     { background: var(--ok);   box-shadow: 0 0 6px var(--ok); }
+  .dot.warn   { background: var(--warn); box-shadow: 0 0 6px var(--warn); }
+  .dot.crit   { background: var(--crit); box-shadow: 0 0 6px var(--crit); }
+  .dot.off    { background: var(--text-dim); }
+
+  /* ── PROGRESS BAR ──────────────────────────────────────────────── */
+  .bar-wrap {
+    height: 5px; background: var(--bg-raised); border-radius: 3px; overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%; border-radius: 3px;
+    transition: width 0.6s cubic-bezier(.4,0,.2,1);
+  }
+  .bar-ok   { background: var(--ok); }
+  .bar-warn { background: var(--warn); }
+  .bar-crit { background: var(--crit); }
+  .bar-fh   { background: var(--accent-fh); }
+  .bar-pve  { background: var(--accent-pve); }
+  .bar-mde  { background: var(--accent-mde); }
+
+  /* ── BADGE ─────────────────────────────────────────────────────── */
+  .badge {
+    display: inline-block;
+    font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 2px 7px; border-radius: 3px; letter-spacing: 0.05em;
+    border: 1px solid;
+  }
+  .badge-ok     { background: rgba(34,197,94,0.1);  color: var(--ok);        border-color: rgba(34,197,94,0.25); }
+  .badge-warn   { background: rgba(245,158,11,0.1);  color: var(--warn);      border-color: rgba(245,158,11,0.25); }
+  .badge-crit   { background: rgba(239,68,68,0.1);   color: var(--crit);      border-color: rgba(239,68,68,0.25); }
+  .badge-info   { background: rgba(99,102,241,0.1);  color: var(--accent-mde); border-color: rgba(99,102,241,0.25); }
+  .badge-fh     { background: rgba(0,180,216,0.1);   color: var(--accent-fh); border-color: rgba(0,180,216,0.25); }
+  .badge-pve    { background: rgba(249,115,22,0.1);  color: var(--accent-pve);border-color: rgba(249,115,22,0.25); }
+  .badge-neutral{ background: rgba(100,116,139,0.1); color: var(--text-sec);  border-color: rgba(100,116,139,0.2); }
+
+  /* ── SUB TABS (Proxmox nodes/VMs) ──────────────────────────────── */
+  .sub-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+  .sub-tab {
+    padding: 5px 12px; border-radius: var(--radius);
+    font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    border: 1px solid var(--border); background: transparent;
+    color: var(--text-dim); cursor: pointer;
+    transition: all var(--transition);
+  }
+  .sub-tab:hover { color: var(--text-sec); border-color: var(--border-hi); }
+  .sub-tab.active { background: rgba(249,115,22,0.12); color: var(--accent-pve); border-color: rgba(249,115,22,0.35); }
+
+  /* ── CONFIG PANEL ──────────────────────────────────────────────── */
+  #config-bar {
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.3s ease;
+  }
+  #config-bar.open { max-height: 300px; }
+  .config-inner { padding: 18px 0; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+  .config-group label {
+    display: block; font-family: var(--font-mono); font-size: 10px;
+    color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  .config-group input {
+    width: 100%; padding: 7px 10px;
+    background: var(--bg-inset); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text-pri);
+    font-family: var(--font-mono); font-size: 12px;
+    outline: none; transition: border-color var(--transition);
+  }
+  .config-group input:focus { border-color: var(--border-hi); }
+  .config-group h4 {
+    font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .config-group.fh  h4 { color: var(--accent-fh); }
+  .config-group.pve h4 { color: var(--accent-pve); }
+  .config-group.mde h4 { color: var(--accent-mde); }
+
+  /* ── CONFIG TOGGLE BTN ─────────────────────────────────────────── */
+  #config-toggle {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 12px; border-radius: var(--radius);
+    background: transparent; border: 1px solid var(--border-hi);
+    color: var(--text-sec); font-family: var(--font-mono);
+    font-size: 11px; cursor: pointer; letter-spacing: 0.06em;
+    text-transform: uppercase; transition: all var(--transition);
+  }
+  #config-toggle:hover { border-color: var(--text-sec); color: var(--text-pri); }
+
+  /* ── LOADING SKELETON ──────────────────────────────────────────── */
+  .skeleton {
+    background: linear-gradient(90deg, var(--bg-raised) 25%, var(--border) 50%, var(--bg-raised) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: var(--radius); height: 14px;
+  }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+  /* ── SCORE RING ────────────────────────────────────────────────── */
+  .score-ring-wrap {
+    display: flex; align-items: center; gap: 20px;
+  }
+  .score-ring-label { flex: 1; }
+  .score-ring-label .score-num {
+    font-family: var(--font-mono); font-size: 42px; font-weight: 700; line-height: 1;
+  }
+  .score-ring-label .score-sub { font-size: 11px; color: var(--text-sec); margin-top: 4px; }
+
+  svg.ring circle { fill: none; stroke-width: 8; stroke-linecap: round; }
+
+  /* ── RESPONSIVE ────────────────────────────────────────────────── */
+  @media (max-width: 900px) {
+    .grid-4 { grid-template-columns: 1fr 1fr; }
+    .grid-3 { grid-template-columns: 1fr 1fr; }
+    .grid-2 { grid-template-columns: 1fr; }
+    .config-inner { grid-template-columns: 1fr; }
+    #nav { overflow-x: auto; }
+  }
+  @media (max-width: 600px) {
+    #main { padding: 16px; }
+    #topbar { padding: 0 16px; }
+    #nav { padding: 0 16px; }
+    .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- TOPBAR -->
+  <header id="topbar">
+    <div class="topbar-brand">
+      <div class="topbar-logo"></div>
+      <span class="topbar-title">Infra<span>Panel</span></span>
+      <span class="demo-pill">DEMO MODE</span>
+    </div>
+    <div class="topbar-right">
+      <span id="clock">--:--:--</span>
+      <button id="config-toggle">&#9881; Config</button>
+      <button id="refresh-btn">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+        </svg>
+        Refresh
+      </button>
+    </div>
+  </header>
+
+  <!-- CONFIG DRAWER -->
+  <div id="config-bar">
+    <div class="config-inner">
+      <div class="config-group fh">
+        <h4>&#9632; Fasthosts CloudNX</h4>
+        <label>API Base URL</label>
+        <input id="cfg-fh-url" type="text" placeholder="https://api.cloudnx.fasthosts.co.uk/v1">
+        <label style="margin-top:8px">API Key</label>
+        <input id="cfg-fh-key" type="password" placeholder="Your CloudNX API key">
+      </div>
+      <div class="config-group pve">
+        <h4>&#9632; Proxmox VE</h4>
+        <label>Host URL (port 8006)</label>
+        <input id="cfg-pve-url" type="text" placeholder="https://192.168.1.100:8006">
+        <label style="margin-top:8px">API Token</label>
+        <input id="cfg-pve-token" type="password" placeholder="user@pam!tokenid=UUID">
+      </div>
+      <div class="config-group mde">
+        <h4>&#9632; Microsoft Defender</h4>
+        <label>Tenant ID</label>
+        <input id="cfg-mde-tenant" type="text" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+        <label style="margin-top:8px">Client ID</label>
+        <input id="cfg-mde-client" type="text" placeholder="App (client) ID from Entra ID">
+        <label style="margin-top:8px">Client Secret</label>
+        <input id="cfg-mde-secret" type="password" placeholder="App secret value">
+      </div>
+    </div>
+  </div>
+
+  <!-- NAV TABS -->
+  <nav id="nav">
+    <button class="nav-tab fh active" data-tab="fh">
+      <span>Fasthosts</span>
+      <span class="tab-badge" id="fh-badge">0</span>
+    </button>
+    <button class="nav-tab pve" data-tab="pve">
+      <span>Proxmox VE</span>
+      <span class="tab-badge" id="pve-badge">0</span>
+    </button>
+    <button class="nav-tab mde" data-tab="mde">
+      <span>Defender</span>
+      <span class="tab-badge" id="mde-badge">0</span>
+    </button>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main id="main">
+
+    <!-- ── FASTHOSTS PANEL ──────────────────────────────────────── -->
+    <section class="panel active" id="panel-fh">
+
+      <!-- Stat row -->
+      <div class="grid-4" id="fh-stats">
+        <div class="stat-tile"><div class="stat-value" style="color:var(--accent-fh)" id="fh-s-total">–</div><div class="stat-label">Total Servers</div></div>
+        <div class="stat-tile"><div class="stat-value" style="color:var(--ok)"   id="fh-s-running">–</div><div class="stat-label">Running</div></div>
+        <div class="stat-tile"><div class="stat-value" style="color:var(--crit)" id="fh-s-stopped">–</div><div class="stat-label">Stopped</div></div>
+        <div class="stat-tile"><div class="stat-value" style="color:var(--warn)" id="fh-s-plan">–</div><div class="stat-label">Avg CPU %</div><div class="stat-sub">across all VPS</div></div>
+      </div>
+
+      <!-- Resource overview -->
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-header"><span class="card-label" style="color:var(--accent-fh)">CPU Utilisation</span></div>
+          <div id="fh-cpu-bar-area"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-label" style="color:var(--accent-fh)">RAM Utilisation</span></div>
+          <div id="fh-ram-bar-area"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-label" style="color:var(--accent-fh)">Disk Utilisation</span></div>
+          <div id="fh-disk-bar-area"></div>
+        </div>
+      </div>
+
+      <!-- Server table -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-label" style="color:var(--accent-fh)">CloudNX Servers</span>
+          <span class="badge badge-fh">Gloucester DC · UK</span>
+        </div>
+        <div class="row-header" style="grid-template-columns: 14px 1fr 110px 90px 100px 80px 80px; gap:12px;">
+          <span></span><span>Name / Plan</span><span>IP</span><span>Spec</span><span>Uptime</span><span>Bandwidth</span><span>Status</span>
+        </div>
+        <div class="row-table" id="fh-server-list"></div>
+      </div>
+
+    </section>
+
+    <!-- ── PROXMOX PANEL ────────────────────────────────────────── -->
+    <section class="panel" id="panel-pve">
+
+      <div class="grid-4">
+        <div class="stat-tile"><div class="stat-value" style="color:var(--accent-pve)" id="pve-s-nodes">–</div><div class="stat-label">Cluster Nodes</div></div>
+        <div class="stat-tile"><div class="stat-value" style="color:var(--ok)"  id="pve-s-vms">–</div><div class="stat-label">Running VMs</div></div>
+        <div class="stat-tile"><div class="stat-value" style="color:var(--accent-pve)" id="pve-s-cts">–</div><div class="stat-label">Containers</div></div>
+        <div class="stat-tile"><div class="stat-value" style="color:var(--warn)" id="pve-s-offline">–</div><div class="stat-label">Offline Nodes</div></div>
+      </div>
+
+      <!-- Node cards -->
+      <div>
+        <div class="card-label" style="margin-bottom:12px; display:block">Cluster Nodes</div>
+        <div class="grid-3" id="pve-node-cards"></div>
+      </div>
+
+      <!-- VM/CT list with sub-tabs -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-label" style="color:var(--accent-pve)">Virtual Machines &amp; Containers</span>
+        </div>
+        <div class="sub-tabs">
+          <button class="sub-tab active" data-subtab="vms">VMs</button>
+          <button class="sub-tab" data-subtab="cts">Containers</button>
+        </div>
+        <div id="pve-vm-table"></div>
+        <div id="pve-ct-table" style="display:none"></div>
+      </div>
+
+    </section>
+
+    <!-- ── DEFENDER PANEL ───────────────────────────────────────── -->
+    <section class="panel" id="panel-mde">
+
+      <div class="grid-4">
+        <div class="stat-tile"><div class="stat-value" style="color:var(--accent-mde)" id="mde-s-total">–</div><div class="stat-label">Total Devices</div></div>
+        <div class="stat-tile"><div class="stat-value" style="color:var(--ok)"  id="mde-s-onboard">–</div><div class="stat-label">Onboarded</div></div>
+        <div class="stat-tile"><div class="stat-value" style="color:var(--crit)" id="mde-s-highrisk">–</div><div class="stat-label">High Risk</div></div>
+        <div class="stat-tile"><div class="stat-value" style="color:var(--warn)" id="mde-s-active">–</div><div class="stat-label">Active Alerts</div></div>
+      </div>
+
+      <div class="grid-2">
+
+        <!-- Secure Score -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-label" style="color:var(--accent-mde)">Microsoft Secure Score</span>
+          </div>
+          <div class="score-ring-wrap">
+            <svg width="90" height="90" viewBox="0 0 90 90" class="ring">
+              <circle cx="45" cy="45" r="36" stroke="var(--border-hi)"/>
+              <circle id="score-ring-fill" cx="45" cy="45" r="36" stroke="var(--accent-mde)"
+                stroke-dasharray="226.2" stroke-dashoffset="226.2"
+                transform="rotate(-90 45 45)"
+                style="transition: stroke-dashoffset 1s ease, stroke 0.5s"/>
+            </svg>
+            <div class="score-ring-label">
+              <div class="score-num" id="mde-score-num" style="color:var(--accent-mde)">–</div>
+              <div class="score-sub">/ 100 Secure Score</div>
+              <div id="mde-score-note" style="font-size:11px; color:var(--text-dim); margin-top:8px; max-width:220px; line-height:1.6"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Severity breakdown -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-label" style="color:var(--accent-mde)">Alert Severity Breakdown</span>
+          </div>
+          <div id="mde-severity-bars" style="display:flex; flex-direction:column; gap:12px;"></div>
+        </div>
+
+      </div>
+
+      <!-- Alerts table -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-label" style="color:var(--accent-mde)">Active Alerts</span>
+          <span class="badge badge-info" id="mde-alert-count">0 alerts</span>
+        </div>
+        <div class="row-header" style="grid-template-columns: 1fr 120px 100px 90px 80px 130px; gap:12px;">
+          <span>Alert</span><span>Device</span><span>Category</span><span>Severity</span><span>Status</span><span>Time (UTC)</span>
+        </div>
+        <div class="row-table" id="mde-alert-list"></div>
+      </div>
+
+    </section>
+
+  </main>
+</div>
+
+<script>
+/* ─────────────────────────────────────────────────────────────────────────────
+   CONFIG – fill in real values and set DEMO_MODE = false to use live APIs.
+   NOTE: Calling Defender or Proxmox directly from a browser will hit CORS.
+   Run a lightweight local proxy (e.g. nginx, Caddy, or a small Node script)
+   to forward requests and inject the auth headers server-side.
+   Fasthosts CloudNX API docs: log in to your CloudNX control panel → API section.
+   Proxmox API docs:   https://pve.proxmox.com/wiki/Proxmox_VE_API
+   Defender API docs:  https://learn.microsoft.com/en-us/microsoft-365/security/defender-endpoint/
+───────────────────────────────────────────────────────────────────────────── */
+const DEMO_MODE = true;
+
+const CFG = {
+  fh: {
+    baseUrl:  '',   // e.g. https://api.cloudnx.fasthosts.co.uk/v1
+    apiKey:   '',
+  },
+  pve: {
+    baseUrl:  '',   // e.g. https://192.168.1.10:8006/api2/json
+    token:    '',   // PVEAPIToken=user@pam!tokenid=UUID
+  },
+  mde: {
+    tenantId:     '',
+    clientId:     '',
+    clientSecret: '',
+  },
+};
+
+/* ── DEMO DATA ─────────────────────────────────────────────────────────────── */
+const DEMO = {
+  fh: {
+    servers: [
+      { id:'fh-001', name:'web-prod-01', status:'running', plan:'VPS M',   cpu:4,  ram:8,  disk:100, ip:'185.82.21.10',  uptime:'42d 6h',  bandwidth:'1.2TB' },
+      { id:'fh-002', name:'web-prod-02', status:'running', plan:'VPS M',   cpu:4,  ram:8,  disk:100, ip:'185.82.21.11',  uptime:'42d 5h',  bandwidth:'0.9TB' },
+      { id:'fh-003', name:'db-prod-01',  status:'running', plan:'VPS L',   cpu:8,  ram:16, disk:200, ip:'185.82.21.12',  uptime:'15d 2h',  bandwidth:'0.4TB' },
+      { id:'fh-004', name:'app-prod-01', status:'running', plan:'VPS XL',  cpu:16, ram:32, disk:400, ip:'185.82.21.13',  uptime:'9d 11h',  bandwidth:'2.1TB' },
+      { id:'fh-005', name:'staging-01',  status:'stopped', plan:'VPS S',   cpu:2,  ram:4,  disk:50,  ip:'185.82.21.14',  uptime:'–',       bandwidth:'–'     },
+      { id:'fh-006', name:'dev-sandbox',  status:'stopped', plan:'VPS XS', cpu:1,  ram:2,  disk:25,  ip:'185.82.21.15',  uptime:'–',       bandwidth:'–'     },
+    ],
+    cpuPct: 38, ramPct: 61, diskPct: 44,
+  },
+  pve: {
+    nodes: [
+      { node:'pve-node01', status:'online',  cpu:22, mem:55, uptime:'120d 14h', vms:8,  cts:3, maxMem:65536, usedMem:36045 },
+      { node:'pve-node02', status:'online',  cpu:47, mem:71, uptime:'120d 13h', vms:10, cts:2, maxMem:65536, usedMem:46731 },
+      { node:'pve-node03', status:'offline', cpu:0,  mem:0,  uptime:'–',        vms:0,  cts:0, maxMem:65536, usedMem:0    },
+    ],
+    vms: [
+      { vmid:100, name:'dc01-2022',     node:'pve-node01', status:'running', cpu:12, mem:44, os:'Windows Server 2022',  type:'qemu' },
+      { vmid:101, name:'dc02-2022',     node:'pve-node02', status:'running', cpu:8,  mem:38, os:'Windows Server 2022',  type:'qemu' },
+      { vmid:102, name:'fileserver-01', node:'pve-node01', status:'running', cpu:5,  mem:29, os:'Ubuntu 22.04 LTS',     type:'qemu' },
+      { vmid:103, name:'app-server-01', node:'pve-node02', status:'running', cpu:31, mem:68, os:'Ubuntu 22.04 LTS',     type:'qemu' },
+      { vmid:104, name:'test-vm-01',    node:'pve-node01', status:'stopped', cpu:0,  mem:0,  os:'Debian 12',            type:'qemu' },
+      { vmid:105, name:'backup-vm',     node:'pve-node02', status:'running', cpu:3,  mem:22, os:'Ubuntu 22.04 LTS',     type:'qemu' },
+    ],
+    cts: [
+      { vmid:200, name:'nginx-proxy',   node:'pve-node01', status:'running', cpu:4,  mem:18, os:'Alpine 3.18',   type:'lxc' },
+      { vmid:201, name:'pihole-01',     node:'pve-node01', status:'running', cpu:1,  mem:12, os:'Debian 12',     type:'lxc' },
+      { vmid:202, name:'monitoring',    node:'pve-node02', status:'running', cpu:6,  mem:35, os:'Ubuntu 22.04',  type:'lxc' },
+      { vmid:203, name:'mail-relay',    node:'pve-node02', status:'stopped', cpu:0,  mem:0,  os:'Debian 12',     type:'lxc' },
+      { vmid:204, name:'wazuh-agent',   node:'pve-node01', status:'running', cpu:9,  mem:41, os:'Ubuntu 22.04',  type:'lxc' },
+    ],
+  },
+  mde: {
+    summary: { total:312, onboarded:308, highRisk:7, active:4 },
+    secureScore: 68,
+    alerts: [
+      { id:'al-001', title:'Suspicious PowerShell execution',    severity:'High',   machine:'WKSTN-042',     status:'New',        category:'Execution',        time:'2026-03-01 09:14' },
+      { id:'al-002', title:'Mimikatz credential harvesting',     severity:'High',   machine:'SRV-DC01',      status:'InProgress', category:'CredentialAccess', time:'2026-03-01 08:52' },
+      { id:'al-003', title:'Outbound connection to known C2 IP', severity:'Medium', machine:'WKSTN-017',     status:'New',        category:'C2',               time:'2026-03-01 08:30' },
+      { id:'al-004', title:'Ransomware behaviour detected',      severity:'High',   machine:'WKSTN-007',     status:'New',        category:'Ransomware',        time:'2026-02-29 23:11' },
+      { id:'al-005', title:'Unusual process injection',          severity:'Medium', machine:'WKSTN-031',     status:'Resolved',   category:'Execution',         time:'2026-02-29 18:44' },
+      { id:'al-006', title:'PUA detected – cryptominer',         severity:'Low',    machine:'LAPTOP-HR-005', status:'Resolved',   category:'PUA',              time:'2026-02-29 14:22' },
+    ],
+  },
+};
+
+/* ── HELPERS ───────────────────────────────────────────────────────────────── */
+function dot(status) {
+  const cls = status === 'running' || status === 'online' ? 'ok'
+            : status === 'stopped' || status === 'offline' ? (status === 'offline' ? 'crit' : 'off')
+            : 'warn';
+  return `<span class="dot ${cls}"></span>`;
+}
+
+function barHtml(pct, cls = 'bar-fh') {
+  const col = pct > 80 ? 'bar-crit' : pct > 60 ? 'bar-warn' : cls;
+  return `<div class="bar-wrap"><div class="bar-fill ${col}" style="width:${pct}%"></div></div>`;
+}
+
+function barRow(label, pct, cls) {
+  return `
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-sec);width:36px;text-align:right">${pct}%</span>
+      <div style="flex:1">${barHtml(pct, cls)}</div>
+      <span style="font-size:11px;color:var(--text-dim);width:80px">${label}</span>
+    </div>`;
+}
+
+function badge(text, cls) {
+  return `<span class="badge badge-${cls}">${text}</span>`;
+}
+
+function severityBadge(s) {
+  const m = { High:'crit', Medium:'warn', Low:'ok' };
+  return badge(s, m[s] || 'neutral');
+}
+
+function statusBadge(s) {
+  const m = { New:'info', InProgress:'warn', Resolved:'ok', running:'ok', stopped:'neutral', online:'ok', offline:'crit' };
+  return badge(s, m[s] || 'neutral');
+}
+
+/* ── CLOCK ─────────────────────────────────────────────────────────────────── */
+function updateClock() {
+  document.getElementById('clock').textContent = new Date().toUTCString().slice(17, 25) + ' UTC';
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+/* ── TAB SWITCHING ─────────────────────────────────────────────────────────── */
+document.querySelectorAll('.nav-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* ── SUB TABS (Proxmox) ────────────────────────────────────────────────────── */
+document.querySelectorAll('.sub-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.sub-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('pve-vm-table').style.display  = btn.dataset.subtab === 'vms' ? '' : 'none';
+    document.getElementById('pve-ct-table').style.display  = btn.dataset.subtab === 'cts' ? '' : 'none';
+  });
+});
+
+/* ── CONFIG DRAWER ─────────────────────────────────────────────────────────── */
+document.getElementById('config-toggle').addEventListener('click', () => {
+  document.getElementById('config-bar').classList.toggle('open');
+});
+
+/* ── FASTHOSTS RENDERER ────────────────────────────────────────────────────── */
+function renderFH(data) {
+  const running = data.servers.filter(s => s.status === 'running').length;
+  const stopped = data.servers.filter(s => s.status === 'stopped').length;
+  const avgCpu  = Math.round(data.servers.filter(s=>s.status==='running').reduce((a,s)=>{
+    // In demo mode we fake per-server cpu – just use overall
+    return a;
+  }, data.cpuPct));
+
+  document.getElementById('fh-s-total').textContent   = data.servers.length;
+  document.getElementById('fh-s-running').textContent = running;
+  document.getElementById('fh-s-stopped').textContent = stopped;
+  document.getElementById('fh-s-plan').textContent    = data.cpuPct + '%';
+  document.getElementById('fh-badge').textContent     = data.servers.length;
+
+  document.getElementById('fh-cpu-bar-area').innerHTML  = barRow('CPU',  data.cpuPct,  'bar-fh');
+  document.getElementById('fh-ram-bar-area').innerHTML  = barRow('RAM',  data.ramPct,  'bar-fh');
+  document.getElementById('fh-disk-bar-area').innerHTML = barRow('Disk', data.diskPct, 'bar-fh');
+
+  const list = document.getElementById('fh-server-list');
+  list.innerHTML = data.servers.map(s => `
+    <div class="row-item" style="grid-template-columns: 14px 1fr 110px 90px 100px 80px 80px; gap:12px;">
+      ${dot(s.status)}
+      <div>
+        <div style="font-weight:600;color:var(--text-pri)">${s.name}</div>
+        <div style="font-size:11px;color:var(--text-dim)">${s.plan} · ${s.cpu}vCPU · ${s.ram}GB RAM · ${s.disk}GB SSD</div>
+      </div>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-sec)">${s.ip}</span>
+      <span style="font-size:11px;color:var(--text-dim)">${s.cpu}c/${s.ram}G</span>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-sec)">${s.uptime}</span>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-sec)">${s.bandwidth}</span>
+      ${statusBadge(s.status)}
+    </div>
+  `).join('');
+}
+
+/* ── PROXMOX RENDERER ──────────────────────────────────────────────────────── */
+function renderPVE(data) {
+  const onlineNodes = data.nodes.filter(n => n.status === 'online');
+  const offlineNodes = data.nodes.filter(n => n.status === 'offline');
+  const runningVMs  = data.vms.filter(v => v.status === 'running').length;
+  const runningCTs  = data.cts.filter(c => c.status === 'running').length;
+
+  document.getElementById('pve-s-nodes').textContent   = data.nodes.length;
+  document.getElementById('pve-s-vms').textContent     = runningVMs;
+  document.getElementById('pve-s-cts').textContent     = runningCTs;
+  document.getElementById('pve-s-offline').textContent = offlineNodes.length;
+  document.getElementById('pve-badge').textContent     = data.nodes.length;
+
+  // Node cards
+  document.getElementById('pve-node-cards').innerHTML = data.nodes.map(n => `
+    <div class="card" style="border-color:${n.status==='offline'?'var(--crit)':'var(--border)'}">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+        ${dot(n.status)}
+        <span style="font-weight:700;font-size:14px;color:var(--text-pri)">${n.node}</span>
+        <span style="margin-left:auto">${statusBadge(n.status)}</span>
+      </div>
+      ${n.status === 'online' ? `
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+              <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim);letter-spacing:.06em">CPU</span>
+              <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-sec)">${n.cpu}%</span>
+            </div>
+            ${barHtml(n.cpu,'bar-pve')}
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+              <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim);letter-spacing:.06em">MEM</span>
+              <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-sec)">${n.mem}%</span>
+            </div>
+            ${barHtml(n.mem,'bar-pve')}
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px;">
+            <span style="font-size:11px;color:var(--text-dim)">VMs: <b style="color:var(--text-sec)">${n.vms}</b></span>
+            <span style="font-size:11px;color:var(--text-dim)">CTs: <b style="color:var(--text-sec)">${n.cts}</b></span>
+            <span style="font-size:11px;color:var(--text-dim)">Up: <b style="color:var(--text-sec)">${n.uptime}</b></span>
+          </div>
+        </div>
+      ` : `<div style="font-size:12px;color:var(--crit);padding:8px 0;">Node unreachable</div>`}
+    </div>
+  `).join('');
+
+  // VM table helper
+  function vmRowsHtml(items) {
+    if (!items.length) return `<div style="padding:20px;text-align:center;color:var(--text-dim);font-size:12px">No items</div>`;
+    return `
+      <div class="row-header" style="grid-template-columns: 50px 1fr 120px 80px 80px 80px; gap:12px;">
+        <span>ID</span><span>Name / OS</span><span>Node</span><span>CPU</span><span>MEM</span><span>Status</span>
+      </div>
+      <div class="row-table">
+        ${items.map(v => `
+          <div class="row-item" style="grid-template-columns: 50px 1fr 120px 80px 80px 80px; gap:12px;">
+            <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim)">${v.vmid}</span>
+            <div>
+              <div style="font-weight:600;color:var(--text-pri)">${v.name}</div>
+              <div style="font-size:11px;color:var(--text-dim)">${v.os}</div>
+            </div>
+            <span style="font-size:11px;color:var(--text-sec)">${v.node}</span>
+            <div>${v.status==='running' ? barHtml(v.cpu,'bar-pve') : '<span style="color:var(--text-dim);font-size:11px">–</span>'}</div>
+            <div>${v.status==='running' ? barHtml(v.mem,'bar-pve') : '<span style="color:var(--text-dim);font-size:11px">–</span>'}</div>
+            ${statusBadge(v.status)}
+          </div>
+        `).join('')}
+      </div>`;
+  }
+
+  document.getElementById('pve-vm-table').innerHTML = vmRowsHtml(data.vms);
+  document.getElementById('pve-ct-table').innerHTML = vmRowsHtml(data.cts);
+}
+
+/* ── DEFENDER RENDERER ─────────────────────────────────────────────────────── */
+function renderMDE(data) {
+  const { summary, secureScore, alerts } = data;
+
+  document.getElementById('mde-s-total').textContent   = summary.total;
+  document.getElementById('mde-s-onboard').textContent = summary.onboarded;
+  document.getElementById('mde-s-highrisk').textContent = summary.highRisk;
+  document.getElementById('mde-s-active').textContent  = summary.active;
+  document.getElementById('mde-badge').textContent     = alerts.filter(a=>a.status!=='Resolved').length;
+  document.getElementById('mde-alert-count').textContent = alerts.length + ' alerts';
+
+  // Secure score ring
+  const circumference = 2 * Math.PI * 36; // 226.2
+  const offset = circumference - (secureScore / 100) * circumference;
+  const ring = document.getElementById('score-ring-fill');
+  ring.style.strokeDashoffset = offset;
+  const scoreCol = secureScore >= 70 ? 'var(--ok)' : secureScore >= 50 ? 'var(--warn)' : 'var(--crit)';
+  ring.style.stroke = scoreCol;
+  document.getElementById('mde-score-num').textContent = secureScore;
+  document.getElementById('mde-score-num').style.color = scoreCol;
+  document.getElementById('mde-score-note').textContent = secureScore < 70
+    ? 'Score below recommended threshold of 70. Review Secure Score recommendations in the Microsoft Defender portal.'
+    : 'Score within acceptable range. Continue monitoring for regressions.';
+
+  // Severity breakdown
+  const sev = { High:0, Medium:0, Low:0 };
+  alerts.forEach(a => { if (sev[a.severity] !== undefined) sev[a.severity]++; });
+  const total = alerts.length || 1;
+  document.getElementById('mde-severity-bars').innerHTML = Object.entries(sev).map(([level, count]) => {
+    const pct = Math.round((count / total) * 100);
+    const cls = level==='High'?'bar-crit':level==='Medium'?'bar-warn':'bar-ok';
+    return `
+      <div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+          <span style="font-size:12px;color:var(--text-sec)">${level}</span>
+          <span style="font-family:var(--font-mono);font-size:12px;color:var(--text-dim)">${count} / ${alerts.length}</span>
+        </div>
+        <div class="bar-wrap"><div class="bar-fill ${cls}" style="width:${pct}%"></div></div>
+      </div>`;
+  }).join('');
+
+  // Alert list
+  document.getElementById('mde-alert-list').innerHTML = alerts.map(a => `
+    <div class="row-item" style="grid-template-columns: 1fr 120px 100px 90px 80px 130px; gap:12px;">
+      <div style="font-weight:600;color:var(--text-pri);font-size:12px">${a.title}</div>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-sec)">${a.machine}</span>
+      <span style="font-size:11px;color:var(--text-dim)">${a.category}</span>
+      ${severityBadge(a.severity)}
+      ${statusBadge(a.status)}
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim)">${a.time}</span>
+    </div>
+  `).join('');
+}
+
+/* ── LIVE API FUNCTIONS ────────────────────────────────────────────────────── */
+/*
+  These functions call real APIs when DEMO_MODE = false.
+
+  IMPORTANT – CORS: Proxmox and Defender APIs will block direct browser requests.
+  You need a backend proxy. A minimal nginx snippet:
+
+    location /api/proxmox/ {
+      proxy_pass https://YOUR_PVE_HOST:8006/api2/json/;
+      proxy_set_header Authorization "PVEAPIToken=user@pam!id=UUID";
+    }
+    location /api/defender/ {
+      proxy_pass https://api.securitycenter.microsoft.com/api/;
+      proxy_set_header Authorization "Bearer TOKEN";
+    }
+
+  Fasthosts CloudNX: Check your CloudNX control panel for the API base URL and
+  key format. Fasthosts document all API actions available through their panel.
+*/
+
+async function fetchFH() {
+  if (DEMO_MODE) return DEMO.fh;
+  const url = document.getElementById('cfg-fh-url').value || CFG.fh.baseUrl;
+  const key = document.getElementById('cfg-fh-key').value || CFG.fh.apiKey;
+  const res = await fetch(`${url}/servers`, {
+    headers: { 'Authorization': `Bearer ${key}`, 'Accept': 'application/json' }
+  });
+  if (!res.ok) throw new Error(`Fasthosts API error: ${res.status}`);
+  const json = await res.json();
+  // Map Fasthosts CloudNX response shape to our internal format.
+  // Adjust field names to match the actual API response from your CloudNX panel.
+  return {
+    servers: json.servers.map(s => ({
+      id: s.id, name: s.label, status: s.power_state === 'on' ? 'running' : 'stopped',
+      plan: s.plan_name, cpu: s.cpu_cores, ram: s.ram_gb, disk: s.disk_gb,
+      ip: s.ipv4_address, uptime: s.uptime_human, bandwidth: s.bandwidth_used_tb + 'TB',
+    })),
+    cpuPct: json.account_usage?.cpu_percent ?? 0,
+    ramPct: json.account_usage?.ram_percent ?? 0,
+    diskPct: json.account_usage?.disk_percent ?? 0,
+  };
+}
+
+async function fetchPVE() {
+  if (DEMO_MODE) return DEMO.pve;
+  const url   = document.getElementById('cfg-pve-url').value   || CFG.pve.baseUrl;
+  const token = document.getElementById('cfg-pve-token').value || CFG.pve.token;
+  const headers = { 'Authorization': token, 'Accept': 'application/json' };
+
+  const [nodesRes, vmsRes] = await Promise.all([
+    fetch(`${url}/nodes`, { headers }),
+    fetch(`${url}/cluster/resources?type=vm`, { headers }),
+  ]);
+  if (!nodesRes.ok) throw new Error(`Proxmox API error: ${nodesRes.status}`);
+
+  const nodesJson = await nodesRes.json();
+  const vmsJson   = await vmsRes.json();
+
+  const nodes = nodesJson.data.map(n => ({
+    node: n.node, status: n.status,
+    cpu: Math.round(n.cpu * 100),
+    mem: Math.round((n.mem / n.maxmem) * 100),
+    uptime: formatUptime(n.uptime), vms: 0, cts: 0,
+    maxMem: Math.round(n.maxmem / 1073741824), usedMem: Math.round(n.mem / 1073741824),
+  }));
+
+  const vms = vmsJson.data.filter(r => r.type === 'qemu').map(v => ({
+    vmid: v.vmid, name: v.name, node: v.node,
+    status: v.status, cpu: Math.round(v.cpu * 100),
+    mem: Math.round((v.mem / v.maxmem) * 100), os: '', type: 'qemu',
+  }));
+  const cts = vmsJson.data.filter(r => r.type === 'lxc').map(c => ({
+    vmid: c.vmid, name: c.name, node: c.node,
+    status: c.status, cpu: Math.round(c.cpu * 100),
+    mem: Math.round((c.mem / c.maxmem) * 100), os: '', type: 'lxc',
+  }));
+
+  // Count VMs/CTs per node
+  [...vms, ...cts].forEach(v => {
+    const n = nodes.find(nd => nd.node === v.node);
+    if (n) { v.type === 'qemu' ? n.vms++ : n.cts++; }
+  });
+
+  return { nodes, vms, cts };
+}
+
+async function fetchMDE() {
+  if (DEMO_MODE) return DEMO.mde;
+  const tenantId = document.getElementById('cfg-mde-tenant').value || CFG.mde.tenantId;
+  const clientId = document.getElementById('cfg-mde-client').value || CFG.mde.clientId;
+  const secret   = document.getElementById('cfg-mde-secret').value || CFG.mde.clientSecret;
+
+  // Step 1: acquire OAuth2 token from Azure AD
+  // NOTE: This should be done server-side to keep the secret safe.
+  // This browser-side call is acceptable only for local/internal tooling.
+  const tokenRes = await fetch(
+    `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'client_credentials',
+        client_id: clientId,
+        client_secret: secret,
+        scope: 'https://api.securitycenter.microsoft.com/.default',
+      }),
+    }
+  );
+  if (!tokenRes.ok) throw new Error(`Defender token error: ${tokenRes.status}`);
+  const { access_token } = await tokenRes.json();
+
+  const apiHeaders = { 'Authorization': `Bearer ${access_token}`, 'Accept': 'application/json' };
+  const base = 'https://api.securitycenter.microsoft.com/api';
+
+  const [machinesRes, alertsRes, scoreRes] = await Promise.all([
+    fetch(`${base}/machines?$select=id,riskScore,onboardingStatus&$top=1000`, { headers: apiHeaders }),
+    fetch(`${base}/alerts?$orderby=alertCreationTime desc&$top=50`, { headers: apiHeaders }),
+    fetch(`${base}/exposureScore`, { headers: apiHeaders }),
+  ]);
+
+  const machines = await machinesRes.json();
+  const alertsJson = await alertsRes.json();
+  const scoreJson  = await scoreRes.json();
+
+  const total      = machines.value.length;
+  const onboarded  = machines.value.filter(m => m.onboardingStatus === 'Onboarded').length;
+  const highRisk   = machines.value.filter(m => m.riskScore === 'High').length;
+  const activeAlerts = alertsJson.value.filter(a => a.status !== 'Resolved').length;
+
+  const alerts = alertsJson.value.slice(0, 20).map(a => ({
+    id: a.id, title: a.title, severity: a.severity, machine: a.computerDnsName,
+    status: a.status, category: a.category,
+    time: new Date(a.alertCreationTime).toISOString().slice(0,16).replace('T',' '),
+  }));
+
+  return {
+    summary: { total, onboarded, highRisk, active: activeAlerts },
+    secureScore: Math.round(scoreJson.score ?? 0),
+    alerts,
+  };
+}
+
+/* ── UTILITY ───────────────────────────────────────────────────────────────── */
+function formatUptime(seconds) {
+  if (!seconds) return '–';
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
+  return `${d}d ${h}h`;
+}
+
+/* ── LOAD & REFRESH ────────────────────────────────────────────────────────── */
+async function loadAll() {
+  const btn = document.getElementById('refresh-btn');
+  btn.classList.add('spinning');
+  try {
+    const [fhData, pveData, mdeData] = await Promise.allSettled([fetchFH(), fetchPVE(), fetchMDE()]);
+    if (fhData.status  === 'fulfilled') renderFH(fhData.value);
+    if (pveData.status === 'fulfilled') renderPVE(pveData.value);
+    if (mdeData.status === 'fulfilled') renderMDE(mdeData.value);
+    if (fhData.status  === 'rejected')  console.error('Fasthosts fetch failed:', fhData.reason);
+    if (pveData.status === 'rejected')  console.error('Proxmox fetch failed:', pveData.reason);
+    if (mdeData.status === 'rejected')  console.error('Defender fetch failed:', mdeData.reason);
+  } finally {
+    setTimeout(() => btn.classList.remove('spinning'), 600);
+  }
+}
+
+document.getElementById('refresh-btn').addEventListener('click', loadAll);
+
+// Auto-refresh every 60 seconds
+setInterval(loadAll, 60000);
+
+// Initial load
+loadAll();
+</script>
+</body>
+</html>
